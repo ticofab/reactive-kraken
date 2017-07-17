@@ -5,10 +5,10 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import io.ticofab.reactivekraken.api.HttpRequestor
 import io.ticofab.reactivekraken.model.AssetResponse
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
-import org.mockito.{ArgumentMatcher, ArgumentMatchers}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
