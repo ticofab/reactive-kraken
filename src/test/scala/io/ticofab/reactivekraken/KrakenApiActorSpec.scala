@@ -8,6 +8,7 @@ import io.ticofab.reactivekraken.model.AssetResponse
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
+import org.mockito.{ArgumentMatcher, ArgumentMatchers}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -28,13 +29,13 @@ class KrakenApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with
         override def fireRequest(request: HttpRequest) = Future("mock")
       }
 
-      val apiActor = TestActorRef(Props(new KrakenAPIActor with MockHttpRequestor))
+      val apiActor: TestActorRef[KrakenAPIActor] = TestActorRef(Props(spy(new KrakenAPIActor() with MockHttpRequestor)))
       val probe = TestProbe()
       probe.send(apiActor, GetAssets)
       probe.expectMsgType[AssetResponse](3.seconds)
 
-      //verify(apiActor.underlyingActor, times(1))
-      //.fireRequest // TODO ask ale
+      verify(apiActor.underlyingActor, times(1))
+        .fireRequest(ArgumentMatchers.any[HttpRequest])
 
     }
 
