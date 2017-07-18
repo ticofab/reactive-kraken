@@ -46,18 +46,12 @@ class KrakenApiActor extends Actor with JsonSupport with HttpRequestor {
   implicit val as = context.system
   implicit val am = ActorMaterializer()
 
+
+
   private def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
     fireRequest(request)
       .map(_.parseJson.convertTo[Response[T]])
-      .recover { case t: Throwable => Response[T](List(t.getMessage), Map()) }
-
-  private def composeReturnMessage[T](pair: String, response: Response[T]): Either[List[String], T] =
-    if (response.error.nonEmpty) Left(response.error)
-    else response.result.get(pair) match {
-      case None => Left(List("No answer"))
-      case Some(responseValue) => Right(responseValue)
-    }
-
+      .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
 
   override def receive = {
 
@@ -65,30 +59,27 @@ class KrakenApiActor extends Actor with JsonSupport with HttpRequestor {
       val request = HttpRequest(uri = "https://api.kraken.com/0/public/Assets")
       handle[Asset](request)
         .map { response =>
-          if (response.error.nonEmpty) Left(response.error)
-          else Right(response.result)
-        }.map(CurrentAssets)
-        .pipeTo(sender)
+          if (response.error.nonEmpty) CurrentAssets(Left(response.error))
+          else if (response.result.isDefined) CurrentAssets(Right(response.result.get))
+        }.pipeTo(sender)
 
     case GetCurrentAssetPair(currency, respectToCurrency) =>
       val params = Map("pair" -> (currency + respectToCurrency))
       val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/AssetPairs").withQuery(Query(params)))
       handle[AssetPair](request)
         .map { response =>
-          if (response.error.nonEmpty) Left(response.error)
-          else Right(response.result)
-        }.map(CurrentAssetPair)
-        .pipeTo(sender)
+          if (response.error.nonEmpty) CurrentAssetPair(Left(response.error))
+          else if (response.result.isDefined) CurrentAssetPair(Right(response.result.get))
+        }.pipeTo(sender)
 
     case GetCurrentTicker(currency, respectToCurrency) =>
       val params = Map("pair" -> (currency + respectToCurrency))
       val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/Ticker").withQuery(Query(params)))
       handle[Ticker](request)
         .map { response =>
-          if (response.error.nonEmpty) Left(response.error)
-          else Right(response.result)
-        }.map(CurrentTicker)
-        .pipeTo(sender)
+          if (response.error.nonEmpty) CurrentTicker(Left(response.error))
+          else if (response.result.isDefined) CurrentTicker(Right(response.result.get))
+        }.pipeTo(sender)
 
   }
 }

@@ -19,7 +19,7 @@ package io.ticofab.reactivekraken.api
 import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
 import spray.json.{DefaultJsonProtocol, JsonFormat}
 
-case class Response[T](error: List[String], result: Map[String, T])
+case class Response[T](error: List[String], result: Option[Map[String, T]])
 
 trait JsonSupport extends DefaultJsonProtocol {
   implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")

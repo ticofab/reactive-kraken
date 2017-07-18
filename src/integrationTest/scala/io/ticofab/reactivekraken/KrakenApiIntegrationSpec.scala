@@ -26,15 +26,15 @@ import scala.concurrent.duration._
 class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
   with WordSpecLike with Matchers with BeforeAndAfterAll with JsonSupport {
 
+  val timeout = 10.seconds
+  val apiActor = system.actorOf(KrakenApiActor())
+  val probe = TestProbe()
+
   "The KrakenAPIActor" should {
 
     "Return a correct Asset response" in {
-
-      val apiActor = system.actorOf(KrakenApiActor())
-      val probe = TestProbe()
       probe.send(apiActor, GetCurrentAssets)
-
-      probe.expectMsgPF(5.second) {
+      probe.expectMsgPF(timeout) {
         case ca: CurrentAssets => println(ca)
         case _ => fail("got wrong message back")
       }
@@ -42,20 +42,16 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
     }
 
     "Return a correct AssetPair response" in {
-      val apiActor = system.actorOf(KrakenApiActor())
-      val probe = TestProbe()
       probe.send(apiActor, GetCurrentAssetPair("ETH", "EUR"))
-      probe.expectMsgPF(5.seconds) {
+      probe.expectMsgPF(timeout) {
         case cap: CurrentAssetPair => println(cap)
         case _ => fail("wrong response")
       }
     }
 
     "Return a correct Ticker response" in {
-      val apiActor = system.actorOf(KrakenApiActor())
-      val probe = TestProbe()
       probe.send(apiActor, GetCurrentTicker("ETH", "EUR"))
-      probe.expectMsgPF(5.seconds) {
+      probe.expectMsgPF(timeout) {
         case ct: CurrentTicker => println(ct)
         case _ => fail("wrong response")
       }
