@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.model
+package io.ticofab.reactivekraken.api
 
 /**
   * Copyright 2017 Fabio Tiriticco, Fabway
@@ -16,9 +16,20 @@ package io.ticofab.reactivekraken.model
   * limitations under the License.
   */
 
-import spray.json.DefaultJsonProtocol
+import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
+import spray.json.{DefaultJsonProtocol, JsonFormat}
+
+case class Response[T](error: List[String], result: Map[String, T])
 
 trait JsonSupport extends DefaultJsonProtocol {
   implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
-  implicit val assetResponseFormat = jsonFormat(AssetResponse, "error", "result")
+  implicit val assetPairFormat = jsonFormat(AssetPair, "altname", "aclass_base", "base", "aclass_quote", "quote", "lot",
+    "pair_decimals", "lot_decimals", "lot_multiplier", "leverage_buy", "leverage_sell", "fees", "fees_maker",
+    "fee_volume_currency", "margin_call", "margin_stop")
+  implicit val tickerFormat = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
 }
+
+object JsonSupport extends DefaultJsonProtocol {
+  implicit def responseFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
+}
+

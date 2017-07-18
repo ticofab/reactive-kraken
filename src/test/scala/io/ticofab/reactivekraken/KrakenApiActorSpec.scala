@@ -3,8 +3,8 @@ package io.ticofab.reactivekraken
 import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.model.HttpRequest
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import io.ticofab.reactivekraken.api.HttpRequestor
-import io.ticofab.reactivekraken.model.AssetResponse
+import io.ticofab.reactivekraken.api.{HttpRequestor, Response}
+import io.ticofab.reactivekraken.model.Asset
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
@@ -29,30 +29,22 @@ class KrakenApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with
         override def fireRequest(request: HttpRequest) = Future("mock")
       }
 
-      val apiActor: TestActorRef[KrakenAPIActor] = TestActorRef(Props(spy(new KrakenAPIActor() with MockHttpRequestor)))
+      val apiActor: TestActorRef[KrakenApiActor] = TestActorRef(Props(spy(new KrakenApiActor() with MockHttpRequestor)))
       val probe = TestProbe()
-      probe.send(apiActor, GetAssets)
-      probe.expectMsgType[AssetResponse](3.seconds)
+      probe.send(apiActor, GetCurrentAssets)
+      probe.expectMsgType[CurrentAssets](3.seconds)
 
       verify(apiActor.underlyingActor, times(1))
         .fireRequest(ArgumentMatchers.any[HttpRequest])
-
     }
 
-    "Don't respond upon receiving a message it doesn't understand" ignore {
-      val testActor = TestActorRef[KrakenAPIActor]
+    "Not respond upon receiving a message it doesn't understand" in {
+      val testActor = TestActorRef[KrakenApiActor]
       val probe = TestProbe()
       probe.send(testActor, "hello")
-      probe.expectNoMsg(3.second)
-
+      probe.expectNoMsg(1.second)
     }
 
-    "Return the current rate when asked to" ignore {
-      val testActor = TestActorRef[KrakenAPIActor]
-      val probe = TestProbe()
-      probe.send(testActor, GetAssets)
-      probe.expectNoMsg(2.seconds)
-    }
   }
 
 }

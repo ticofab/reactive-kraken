@@ -17,46 +17,82 @@ package io.ticofab.reactivekraken
   */
 
 import akka.actor.{Actor, Props}
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{HttpRequest, Uri}
+import akka.pattern.pipe
 import akka.stream.ActorMaterializer
-import io.ticofab.reactivekraken.api.HttpRequestor
-import io.ticofab.reactivekraken.model.{AssetResponse, JsonSupport}
+import io.ticofab.reactivekraken.api.JsonSupport.responseFormat
+import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, Response}
+import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
-case object GetAssets
+case object GetCurrentAssets
 
-case class GetCurrentRate(currency: String, respectToCurrency: String)
+case class CurrentAssets(assets: Either[List[String], Map[String, Asset]])
 
-case class CurrentRate(currency: String, respectToCurrency: String, value: Double)
+case class GetCurrentAssetPair(currency: String, respectToCurrency: String)
 
-class KrakenAPIActor extends Actor with JsonSupport with HttpRequestor {
+case class CurrentAssetPair(assetPair: Either[List[String], Map[String, AssetPair]])
+
+case class GetCurrentTicker(currency: String, respectToCurrency: String)
+
+case class CurrentTicker(ticker: Either[List[String], Map[String, Ticker]])
+
+class KrakenApiActor extends Actor with JsonSupport with HttpRequestor {
 
   implicit val as = context.system
   implicit val am = ActorMaterializer()
 
+  private def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
+    fireRequest(request)
+      .map(_.parseJson.convertTo[Response[T]])
+      .recover { case t: Throwable => Response[T](List(t.getMessage), Map()) }
+
+  private def composeReturnMessage[T](pair: String, response: Response[T]): Either[List[String], T] =
+    if (response.error.nonEmpty) Left(response.error)
+    else response.result.get(pair) match {
+      case None => Left(List("No answer"))
+      case Some(responseValue) => Right(responseValue)
+    }
+
+
   override def receive = {
 
-    case GetAssets =>
-      val originalSender = sender
+    case GetCurrentAssets =>
+      val request = HttpRequest(uri = "https://api.kraken.com/0/public/Assets")
+      handle[Asset](request)
+        .map { response =>
+          if (response.error.nonEmpty) Left(response.error)
+          else Right(response.result)
+        }.map(CurrentAssets)
+        .pipeTo(sender)
 
-      fireRequest(HttpRequest(uri = "https://api.kraken.com/0/public/Assets"))
-        .map(_.parseJson.convertTo[AssetResponse])
-        .recover { case t: Throwable => AssetResponse(List(t.getMessage), Map()) }
-        .onComplete {
-          case Success(response) => originalSender ! response
-          case Failure(error) => originalSender ! AssetResponse(List(error.getMessage), Map())
-        }
+    case GetCurrentAssetPair(currency, respectToCurrency) =>
+      val params = Map("pair" -> (currency + respectToCurrency))
+      val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/AssetPairs").withQuery(Query(params)))
+      handle[AssetPair](request)
+        .map { response =>
+          if (response.error.nonEmpty) Left(response.error)
+          else Right(response.result)
+        }.map(CurrentAssetPair)
+        .pipeTo(sender)
 
-    case GetCurrentRate(currency, respectToCurrency) =>
-      val originalSender = sender
+    case GetCurrentTicker(currency, respectToCurrency) =>
+      val params = Map("pair" -> (currency + respectToCurrency))
+      val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/Ticker").withQuery(Query(params)))
+      handle[Ticker](request)
+        .map { response =>
+          if (response.error.nonEmpty) Left(response.error)
+          else Right(response.result)
+        }.map(CurrentTicker)
+        .pipeTo(sender)
 
-    case _ =>
   }
 }
 
-object KrakenAPIActor {
-  def apply() = Props(new KrakenAPIActor)
+object KrakenApiActor {
+  def apply() = Props(new KrakenApiActor)
 }
