@@ -3,8 +3,7 @@ package io.ticofab.reactivekraken
 import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.model.HttpRequest
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import io.ticofab.reactivekraken.api.{HttpRequestor, Response}
-import io.ticofab.reactivekraken.model.Asset
+import io.ticofab.reactivekraken.api.HttpRequestor
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
