@@ -23,7 +23,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 
-class KrakenAPIIntegrationTest extends TestKit(ActorSystem("KrakenApiIntegrationTest"))
+class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
   with WordSpecLike with Matchers with BeforeAndAfterAll with JsonSupport {
 
   "The KrakenAPIActor" should {

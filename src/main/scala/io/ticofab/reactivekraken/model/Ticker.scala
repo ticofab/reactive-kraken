@@ -21,7 +21,7 @@ case class Ticker(askArray: List[String],
                   lastTradeClosed: List[String],
                   volume: List[String],
                   volumeWeightedAveragePrice: List[String],
-                  numberOfTrades: List[String],
+                  numberOfTrades: List[Int],
                   low: List[String],
                   high: List[String],
                   openingPrice: String)
