@@ -19,6 +19,8 @@ import scala.concurrent.duration._
 class KrakenApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with ImplicitSender
   with WordSpecLike with Matchers with MockitoSugar {
 
+  def nonceGenerator = () => System.currentTimeMillis.toString
+
   "A KrakenApiActor " should {
 
     "Fire a request when asked to get assets" in {
@@ -28,7 +30,7 @@ class KrakenApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with
         override def fireRequest(request: HttpRequest) = Future("mock")
       }
 
-      val apiActor: TestActorRef[KrakenApiActor] = TestActorRef(Props(spy(new KrakenApiActor() with MockHttpRequestor)))
+      val apiActor: TestActorRef[KrakenApiActor] = TestActorRef(Props(spy(new KrakenApiActor(nonceGenerator) with MockHttpRequestor)))
       val probe = TestProbe()
       probe.send(apiActor, GetCurrentAssets)
       probe.expectMsgType[CurrentAssets](3.seconds)

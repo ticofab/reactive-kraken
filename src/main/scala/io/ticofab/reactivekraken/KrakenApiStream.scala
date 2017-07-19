@@ -27,15 +27,17 @@ object KrakenApiStream {
   implicit val as = ActorSystem()
   implicit val am = ActorMaterializer()
 
+  def nonceGenerator = () => System.currentTimeMillis.toString
+
   def assetPairStream(currency: String, respectToCurrencty: String) = {
-    val apiActor = as.actorOf(KrakenApiActor())
+    val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))
     Source
       .tick(0.seconds, 2.second, GetCurrentAssetPair(currency, respectToCurrencty))
       .mapAsync(2) { gcap => (apiActor ? gcap) (2.second).mapTo[CurrentAssetPair] }
   }
 
   def tickerStream(currency: String, respectToCurrencty: String) = {
-    val apiActor = as.actorOf(KrakenApiActor())
+    val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))
     Source
       .tick(0.seconds, 2.second, GetCurrentTicker(currency, respectToCurrencty))
       .mapAsync(2) { gct => (apiActor ? gct) (2.second).mapTo[CurrentTicker] }

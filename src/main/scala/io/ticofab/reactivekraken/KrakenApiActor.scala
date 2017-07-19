@@ -16,18 +16,26 @@ package io.ticofab.reactivekraken
   * limitations under the License.
   */
 
+import java.security.MessageDigest
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpRequest, Uri}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.pattern.pipe
 import akka.stream.ActorMaterializer
 import io.ticofab.reactivekraken.api.JsonSupport.responseFormat
 import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, Response}
 import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
+import org.apache.commons.codec.binary.Base64
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.language.postfixOps
+import scala.util.Properties
 
 case object GetCurrentAssets
 
@@ -41,17 +49,40 @@ case class GetCurrentTicker(currency: String, respectToCurrency: String)
 
 case class CurrentTicker(ticker: Either[List[String], Map[String, Ticker]])
 
-class KrakenApiActor extends Actor with JsonSupport with HttpRequestor {
+case object GetCurrentAccountBalance
+
+case class CurrentAccountBalance(assets: Either[List[String], Map[String, String]])
+
+class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSupport with HttpRequestor {
 
   implicit val as = context.system
   implicit val am = ActorMaterializer()
 
+  def loadVar(name: String) =
+    Properties.envOrNone(name) match {
+      case None =>
+        context.parent ! "error" // TODO proper error message
+        "dummyo"
+      case Some(value) => value
+    }
 
+  private val apiKey = loadVar("KRAKEN_API_KEY")
+  private val apiSecret = loadVar("KRAKEN_API_SECRET")
 
   private def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
     fireRequest(request)
       .map(_.parseJson.convertTo[Response[T]])
       .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
+
+  private def getSignature(path: String, nonce: String, postData: String) = {
+    // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
+    val md = MessageDigest.getInstance("SHA-256")
+    md.update((nonce + postData).getBytes)
+    val mac = Mac.getInstance("HmacSHA512")
+    mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
+    mac.update(path.getBytes)
+    new String(Base64.encodeBase64(mac.doFinal(md.digest())))
+  }
 
   override def receive = {
 
@@ -81,9 +112,25 @@ class KrakenApiActor extends Actor with JsonSupport with HttpRequestor {
           else if (response.result.isDefined) CurrentTicker(Right(response.result.get))
         }.pipeTo(sender)
 
+    case GetCurrentAccountBalance =>
+      val path = "/0/private/Balance"
+      val nonce = nonceGenerator.apply
+      val postData = "nonce=" + nonce
+      val signature = getSignature(path, nonce, postData)
+      val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
+      val uri = "https://api.kraken.com" + path
+      val request = HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
+
+      handle[String](request)
+        .map { response =>
+          if (response.error.nonEmpty) CurrentAccountBalance(Left(response.error))
+          else if (response.result.isDefined) CurrentAccountBalance(Right(response.result.get))
+        }.pipeTo(sender)
+
   }
+
 }
 
 object KrakenApiActor {
-  def apply() = Props(new KrakenApiActor)
+  def apply(nonceGenerator: () => String) = Props(new KrakenApiActor(nonceGenerator))
 }

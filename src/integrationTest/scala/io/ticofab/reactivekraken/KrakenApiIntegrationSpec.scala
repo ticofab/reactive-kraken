@@ -27,7 +27,10 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
   with WordSpecLike with Matchers with BeforeAndAfterAll with JsonSupport {
 
   val timeout = 10.seconds
-  val apiActor = system.actorOf(KrakenApiActor())
+
+  def nonceGenerator = () => System.currentTimeMillis.toString
+
+  val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
   val probe = TestProbe()
 
   "The KrakenAPIActor" should {
@@ -56,5 +59,14 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
         case _ => fail("wrong response")
       }
     }
+
+    "Return the current account balance" in {
+      probe.send(apiActor, GetCurrentAccountBalance)
+      probe.expectMsgPF(timeout) {
+        case cab: CurrentAccountBalance => println(cab)
+        case _ => fail("wrong message")
+      }
+    }
+
   }
 }

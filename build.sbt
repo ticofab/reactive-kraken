@@ -36,6 +36,9 @@ libraryDependencies ++= {
     // json parsing stuff
     "io.spray" %% "spray-json" % "1.3.3",
 
+    // for de/encoding in Base64
+    "commons-codec" % "commons-codec" % "1.10",
+
     // ---- test
     "org.scalatest" %% "scalatest" % "3.0.1" % "test, it",
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test, it",
