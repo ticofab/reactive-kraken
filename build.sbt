@@ -15,11 +15,17 @@
   * limitations under the License.
   */
 
-name := "reactive-kraken"
+name := """reactive-kraken"""
 
 version := "0.1.0"
 
 scalaVersion := "2.12.2"
+
+organization := "io.ticofab"
+
+licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+
+crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 
 libraryDependencies ++= {
 
@@ -56,6 +62,5 @@ lazy val root = Project(id = "reactive-kraken", base = file("."))
     sourceDirectory in IntegrationTest := baseDirectory.value / "src/integrationTest",
     parallelExecution in IntegrationTest := false
   )
-    
 
-
+bintrayPackageLabels := Seq("scala", "akka", "kraken", "reactive")
