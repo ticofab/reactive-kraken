@@ -1,8 +1,7 @@
 Reactive Kraken
 ===============
 
-Scala library based on [Akka](http://akka.io) to help connect to the 
-[Kraken API](https://www.kraken.com/help/api#general-usage) in a reactive way. Work in progress and contributions are very welcome.
+Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api#general-usage) in a reactive way. Work in progress and contributions are very welcome.
 
 Import via SBT
 --------------
@@ -51,7 +50,7 @@ val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
 
 **Stream based usage**
 
-The stream approach uses `akka-stream` and it builds upon the `KrakenApiActor`. These streams will check every 2 seconds for data, but I'm planning to make it customisable. 
+The stream approach uses `akka-stream` and it builds upon the `KrakenApiActor`. These streams will check every 2 seconds for data, but I plan to make it customisable. 
 
 You can obtain a number of streams via the `KrakenApiStream` object:
  
