@@ -29,7 +29,7 @@ import akka.stream.ActorMaterializer
 import io.ticofab.reactivekraken.api.JsonSupport.responseFormat
 import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, Response}
 import io.ticofab.reactivekraken.messages._
-import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
+import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker, TradeBalance}
 import org.apache.commons.codec.binary.Base64
 import spray.json._
 
@@ -53,77 +53,81 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
 
   private val apiKey = loadVar("KRAKEN_API_KEY")
   private val apiSecret = loadVar("KRAKEN_API_SECRET")
+  private val basePath = "https://api.kraken.com"
 
-  private def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
+  private def typedResponse[U: JsonFormat, M <: MessageResponse[U]](path: String,
+                                                                    params: Option[Map[String, String]],
+                                                                    mkM: Either[List[String], Map[String, U]] => M,
+                                                                    sign: Boolean = false): Future[M] = {
+
+    def getSignature(path: String, nonce: String, postData: String) = {
+      // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
+      val md = MessageDigest.getInstance("SHA-256")
+      md.update((nonce + postData).getBytes)
+      val mac = Mac.getInstance("HmacSHA512")
+      mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
+      mac.update(path.getBytes)
+      new String(Base64.encodeBase64(mac.doFinal(md.digest())))
+    }
+
+    def getSignedRequest(path: String, uri: Uri) = {
+      val nonce = nonceGenerator.apply
+      val postData = "nonce=" + nonce
+      val signature = getSignature(path, nonce, postData)
+      val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
+      HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
+    }
+
+    def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
     fireRequest(request)
       .map(_.parseJson.convertTo[Response[T]])
       .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
 
-  private def getSignature(path: String, nonce: String, postData: String) = {
-    // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
-    val md = MessageDigest.getInstance("SHA-256")
-    md.update((nonce + postData).getBytes)
-    val mac = Mac.getInstance("HmacSHA512")
-    mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
-    mac.update(path.getBytes)
-    new String(Base64.encodeBase64(mac.doFinal(md.digest())))
+    def extractResponse[T <: U](resp: Response[T]): M =
+      if (resp.error.nonEmpty) mkM(Left(resp.error))
+      else if (resp.result.isDefined) mkM(Right(resp.result.get))
+      else mkM(Left(List("Something went wrong: response has no content.")))
+
+    val uri = params match {
+      case Some(value) => Uri(basePath + path).withQuery(Query(value))
+      case None => Uri(basePath + path)
+    }
+
+    val request = if (sign) getSignedRequest(path, uri) else HttpRequest(uri = uri)
+
+    handle[U](request).map(extractResponse)
   }
 
-  private def getSignedRequest(path: String, maybeParams: Option[Map[String, String]] = None) = {
-    val nonce = nonceGenerator.apply
-    val postData = "nonce=" + nonce
-    val signature = getSignature(path, nonce, postData)
-    val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
-    val uri = maybeParams match {
-      case None => Uri("https://api.kraken.com" + path)
-      case Some(params) => Uri("https://api.kraken.com" + path).withQuery(Query(params))
-    }
-    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
-  }
+  implicit def toOption[T](t: T): Option[T] = Some(t)
 
   override def receive = {
 
     case GetCurrentAssets =>
-      val request = HttpRequest(uri = "https://api.kraken.com/0/public/Assets")
-      handle[Asset](request)
-        .map { response =>
-          if (response.error.nonEmpty) CurrentAssets(Left(response.error))
-          else if (response.result.isDefined) CurrentAssets(Right(response.result.get))
-        }.pipeTo(sender)
+      val path = "/0/public/Assets"
+      typedResponse[Asset, CurrentAssets](path, None, CurrentAssets).pipeTo(sender)
 
     case GetCurrentAssetPair(currency, respectToCurrency) =>
+      val path = "/0/public/AssetPairs"
       val params = Map("pair" -> (currency + respectToCurrency))
-      val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/AssetPairs").withQuery(Query(params)))
-      handle[AssetPair](request)
-        .map { response =>
-          if (response.error.nonEmpty) CurrentAssetPair(Left(response.error))
-          else if (response.result.isDefined) CurrentAssetPair(Right(response.result.get))
-        }.pipeTo(sender)
+      typedResponse[AssetPair, CurrentAssetPair](path, params, CurrentAssetPair).pipeTo(sender)
 
     case GetCurrentTicker(currency, respectToCurrency) =>
+      val path = "/0/public/Ticker"
       val params = Map("pair" -> (currency + respectToCurrency))
-      val request = HttpRequest(uri = Uri("https://api.kraken.com/0/public/Ticker").withQuery(Query(params)))
-      handle[Ticker](request)
-        .map { response =>
-          if (response.error.nonEmpty) CurrentTicker(Left(response.error))
-          else if (response.result.isDefined) CurrentTicker(Right(response.result.get))
-        }.pipeTo(sender)
+      typedResponse[Ticker, CurrentTicker](path, params, CurrentTicker).pipeTo(sender)
 
     case GetCurrentAccountBalance =>
-      handle[String](getSignedRequest("/0/private/Balance"))
-        .map { response =>
-          if (response.error.nonEmpty) CurrentAccountBalance(Left(response.error))
-          else if (response.result.isDefined) CurrentAccountBalance(Right(response.result.get))
-        }.pipeTo(sender)
+      val path = "/0/private/Balance"
+      typedResponse[String, CurrentAccountBalance](path, None, CurrentAccountBalance, sign = true).pipeTo(sender)
 
     case GetCurrentTradeBalance(asset) =>
-      handle[String](getSignedRequest("/0/private/TradeBalance", Some(Map("asset" -> "ZEUR"))))
-        .map { response =>
-          if (response.error.nonEmpty) CurrentTradeBalance(Left(response.error))
-          else if (response.result.isDefined) CurrentTradeBalance(Right(response.result.get))
-        }.pipeTo(sender)
+      val path = "/0/private/TradeBalance"
+      val params = Map("asset" -> "ZEUR")
+      typedResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
 
   }
+
+
 }
 
 object KrakenApiActor {

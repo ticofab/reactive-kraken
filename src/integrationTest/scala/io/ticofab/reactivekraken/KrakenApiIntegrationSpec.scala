@@ -18,8 +18,8 @@ package io.ticofab.reactivekraken
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestKit, TestProbe}
-import io.ticofab.reactivekraken.messages._
 import io.ticofab.reactivekraken.api.JsonSupport
+import io.ticofab.reactivekraken.messages._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._

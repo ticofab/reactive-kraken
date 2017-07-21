@@ -16,7 +16,15 @@ package io.ticofab.reactivekraken.model
   * limitations under the License.
   */
 
-final case class TradeBalance(equivalentBalance: Double)
+final case class TradeBalance(equivalentBalance: Double,
+                              tradeBalance: Double,
+                              marginAmount: Double,
+                              unrealizedNetProfit: Double,
+                              costBasis: Double,
+                              floatingValuation: Double,
+                              equity: Double,
+                              freeMargin: Double,
+                              marginLevel: Double)
 
 /*
 eb = equivalent balance (combined balance of all currencies)

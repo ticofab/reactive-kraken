@@ -16,7 +16,7 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
+import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker, TradeBalance}
 import spray.json.{DefaultJsonProtocol, JsonFormat}
 
 case class Response[T](error: List[String], result: Option[Map[String, T]])
@@ -27,6 +27,7 @@ trait JsonSupport extends DefaultJsonProtocol {
     "pair_decimals", "lot_decimals", "lot_multiplier", "leverage_buy", "leverage_sell", "fees", "fees_maker",
     "fee_volume_currency", "margin_call", "margin_stop")
   implicit val tickerFormat = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
+  implicit val tradeBalanceFormat = jsonFormat(TradeBalance, "eb", "tb", "m", "n", "c", "v", "e", "mf", "ml")
 }
 
 object JsonSupport extends DefaultJsonProtocol {
