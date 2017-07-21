@@ -28,6 +28,7 @@ import akka.pattern.pipe
 import akka.stream.ActorMaterializer
 import io.ticofab.reactivekraken.api.JsonSupport.responseFormat
 import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, Response}
+import io.ticofab.reactivekraken.messages._
 import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker}
 import org.apache.commons.codec.binary.Base64
 import spray.json._
@@ -36,22 +37,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.Properties
-
-case object GetCurrentAssets
-
-case class CurrentAssets(assets: Either[List[String], Map[String, Asset]])
-
-case class GetCurrentAssetPair(currency: String, respectToCurrency: String)
-
-case class CurrentAssetPair(assetPair: Either[List[String], Map[String, AssetPair]])
-
-case class GetCurrentTicker(currency: String, respectToCurrency: String)
-
-case class CurrentTicker(ticker: Either[List[String], Map[String, Ticker]])
-
-case object GetCurrentAccountBalance
-
-case class CurrentAccountBalance(assets: Either[List[String], Map[String, String]])
 
 class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSupport with HttpRequestor {
 
@@ -84,6 +69,18 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
     new String(Base64.encodeBase64(mac.doFinal(md.digest())))
   }
 
+  private def getSignedRequest(path: String, maybeParams: Option[Map[String, String]] = None) = {
+    val nonce = nonceGenerator.apply
+    val postData = "nonce=" + nonce
+    val signature = getSignature(path, nonce, postData)
+    val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
+    val uri = maybeParams match {
+      case None => Uri("https://api.kraken.com" + path)
+      case Some(params) => Uri("https://api.kraken.com" + path).withQuery(Query(params))
+    }
+    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
+  }
+
   override def receive = {
 
     case GetCurrentAssets =>
@@ -113,22 +110,20 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
         }.pipeTo(sender)
 
     case GetCurrentAccountBalance =>
-      val path = "/0/private/Balance"
-      val nonce = nonceGenerator.apply
-      val postData = "nonce=" + nonce
-      val signature = getSignature(path, nonce, postData)
-      val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
-      val uri = "https://api.kraken.com" + path
-      val request = HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
-
-      handle[String](request)
+      handle[String](getSignedRequest("/0/private/Balance"))
         .map { response =>
           if (response.error.nonEmpty) CurrentAccountBalance(Left(response.error))
           else if (response.result.isDefined) CurrentAccountBalance(Right(response.result.get))
         }.pipeTo(sender)
 
-  }
+    case GetCurrentTradeBalance(asset) =>
+      handle[String](getSignedRequest("/0/private/TradeBalance", Some(Map("asset" -> "ZEUR"))))
+        .map { response =>
+          if (response.error.nonEmpty) CurrentTradeBalance(Left(response.error))
+          else if (response.result.isDefined) CurrentTradeBalance(Right(response.result.get))
+        }.pipeTo(sender)
 
+  }
 }
 
 object KrakenApiActor {

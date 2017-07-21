@@ -20,6 +20,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
+import io.ticofab.reactivekraken.messages._
 
 import scala.concurrent.duration._
 

@@ -18,6 +18,7 @@ package io.ticofab.reactivekraken
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestKit, TestProbe}
+import io.ticofab.reactivekraken.messages._
 import io.ticofab.reactivekraken.api.JsonSupport
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -64,6 +65,14 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
       probe.send(apiActor, GetCurrentAccountBalance)
       probe.expectMsgPF(timeout) {
         case cab: CurrentAccountBalance => println(cab)
+        case _ => fail("wrong message")
+      }
+    }
+
+    "Return the current trade balance" in {
+      probe.send(apiActor, GetCurrentTradeBalance())
+      probe.expectMsgPF(timeout) {
+        case ctb: CurrentTradeBalance => println(ctb)
         case _ => fail("wrong message")
       }
     }
