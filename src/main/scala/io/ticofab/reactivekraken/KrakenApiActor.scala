@@ -55,10 +55,10 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
   private val apiSecret = loadVar("KRAKEN_API_SECRET")
   private val basePath = "https://api.kraken.com"
 
-  private def typedResponse[U: JsonFormat, M <: MessageResponse[U]](path: String,
-                                                                    params: Option[Map[String, String]],
-                                                                    mkM: Either[List[String], Map[String, U]] => M,
-                                                                    sign: Boolean = false): Future[M] = {
+  private def apiResponse[U: JsonFormat, M <: MessageResponse[U]](path: String,
+                                                                  params: Option[Map[String, String]],
+                                                                  mkM: Either[List[String], Map[String, U]] => M,
+                                                                  sign: Boolean = false): Future[M] = {
 
     def getSignature(path: String, nonce: String, postData: String) = {
       // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
@@ -79,9 +79,9 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
     }
 
     def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
-    fireRequest(request)
-      .map(_.parseJson.convertTo[Response[T]])
-      .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
+      fireRequest(request)
+        .map(_.parseJson.convertTo[Response[T]])
+        .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
 
     def extractResponse[T <: U](resp: Response[T]): M =
       if (resp.error.nonEmpty) mkM(Left(resp.error))
@@ -104,26 +104,26 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
 
     case GetCurrentAssets =>
       val path = "/0/public/Assets"
-      typedResponse[Asset, CurrentAssets](path, None, CurrentAssets).pipeTo(sender)
+      apiResponse[Asset, CurrentAssets](path, None, CurrentAssets).pipeTo(sender)
 
     case GetCurrentAssetPair(currency, respectToCurrency) =>
       val path = "/0/public/AssetPairs"
       val params = Map("pair" -> (currency + respectToCurrency))
-      typedResponse[AssetPair, CurrentAssetPair](path, params, CurrentAssetPair).pipeTo(sender)
+      apiResponse[AssetPair, CurrentAssetPair](path, params, CurrentAssetPair).pipeTo(sender)
 
     case GetCurrentTicker(currency, respectToCurrency) =>
       val path = "/0/public/Ticker"
       val params = Map("pair" -> (currency + respectToCurrency))
-      typedResponse[Ticker, CurrentTicker](path, params, CurrentTicker).pipeTo(sender)
+      apiResponse[Ticker, CurrentTicker](path, params, CurrentTicker).pipeTo(sender)
 
     case GetCurrentAccountBalance =>
       val path = "/0/private/Balance"
-      typedResponse[String, CurrentAccountBalance](path, None, CurrentAccountBalance, sign = true).pipeTo(sender)
+      apiResponse[String, CurrentAccountBalance](path, None, CurrentAccountBalance, sign = true).pipeTo(sender)
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
-      val params = Map("asset" -> "ZEUR")
-      typedResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
+      val params = Map("asset" -> "ZEUR") // TODO: use asset from message
+      apiResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
 
   }
 
