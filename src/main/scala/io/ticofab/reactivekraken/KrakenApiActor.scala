@@ -98,7 +98,7 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
     handle[U](request).map(extractResponse)
   }
 
-  implicit def toOption[T](t: T): Option[T] = Some(t)
+  implicit def toOption(m: Map[String, String]): Option[Map[String, String]] = Some(m)
 
   override def receive = {
 
@@ -125,6 +125,13 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
       val params = Map("asset" -> "ZEUR") // TODO: use asset from message
       apiResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
 
+    case GetCurrentOpenOrders =>
+      val path = "/0/private/OpenOrders"
+      apiResponse[String, CurrentOpenOrders](path, None, CurrentOpenOrders, sign = true).pipeTo(sender)
+
+    case GetCurrentClosedOrders =>
+      val path = "/0/private/ClosedOrders"
+      apiResponse[String, CurrentClosedOrders](path, None, CurrentClosedOrders, sign = true).pipeTo(sender)
   }
 
 

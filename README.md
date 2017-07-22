@@ -1,7 +1,7 @@
 Reactive Kraken
 ===============
 
-Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api#general-usage) in a reactive way. Work in progress and contributions are very welcome.
+Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api) in a reactive way. Work in progress and contributions are very welcome.
 
 Import via SBT
 --------------

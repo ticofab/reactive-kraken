@@ -77,5 +77,21 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
       }
     }
 
+    "Return the current open orders" in {
+      probe.send(apiActor, GetCurrentOpenOrders)
+      probe.expectMsgPF(timeout) {
+        case coo: CurrentOpenOrders => println(coo)
+        case _ => fail("wrong message")
+      }
+    }
+
+    "Return the current closed orders" in {
+      probe.send(apiActor, GetCurrentClosedOrders)
+      probe.expectMsgPF(timeout) {
+        case cco: CurrentClosedOrders => println(cco)
+        case _ => fail("wrong message")
+      }
+    }
+
   }
 }

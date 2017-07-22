@@ -6,13 +6,17 @@ sealed trait Message
 
 case object GetCurrentAssets extends Message
 
-final case class GetCurrentAssetPair(currency: String, respectToCurrency: String) extends Message
+case class GetCurrentAssetPair(currency: String, respectToCurrency: String) extends Message
 
-final case class GetCurrentTicker(currency: String, respectToCurrency: String) extends Message
+case class GetCurrentTicker(currency: String, respectToCurrency: String) extends Message
 
 case object GetCurrentAccountBalance extends Message
 
-final case class GetCurrentTradeBalance(asset: Option[String] = None) extends Message
+case class GetCurrentTradeBalance(asset: Option[String] = None) extends Message
+
+case object GetCurrentOpenOrders
+
+case object GetCurrentClosedOrders
 
 
 abstract class MessageResponse[T](result: Either[List[String], Map[String, T]]) extends Message
@@ -27,3 +31,6 @@ case class CurrentAccountBalance(result: Either[List[String], Map[String, String
 
 case class CurrentTradeBalance(result: Either[List[String], Map[String, TradeBalance]]) extends MessageResponse[TradeBalance](result)
 
+case class CurrentOpenOrders(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
+
+case class CurrentClosedOrders(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
