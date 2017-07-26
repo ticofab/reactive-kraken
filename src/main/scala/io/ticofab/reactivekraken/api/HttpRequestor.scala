@@ -30,9 +30,13 @@ trait HttpRequestor {
   implicit val as: ActorSystem
   implicit val am: ActorMaterializer
 
-  def fireRequest(request: HttpRequest): Future[String] =
-    Http().singleRequest(request)
+  def fireRequest(request: HttpRequest): Future[String] = {
+    val r = Http().singleRequest(request)
       .flatMap(_.entity.toStrict(2.second))
       .map(_.data)
       .map(_.utf8String)
+
+    r.foreach(println)
+    r
+  }
 }

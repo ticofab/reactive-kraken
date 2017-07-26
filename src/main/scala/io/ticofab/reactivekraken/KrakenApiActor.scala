@@ -26,10 +26,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.pattern.pipe
 import akka.stream.ActorMaterializer
-import io.ticofab.reactivekraken.api.JsonSupport.responseFormat
-import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, Response}
+import io.ticofab.reactivekraken.api.JsonSupport.{orderResponseFormat, responseFormat}
+import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, OrderResponse, Response}
 import io.ticofab.reactivekraken.messages._
-import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker, TradeBalance}
+import io.ticofab.reactivekraken.model._
 import org.apache.commons.codec.binary.Base64
 import spray.json._
 
@@ -55,30 +55,35 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
   private val apiSecret = loadVar("KRAKEN_API_SECRET")
   private val basePath = "https://api.kraken.com"
 
+  private def getSignature(path: String, nonce: String, postData: String) = {
+    // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
+    val md = MessageDigest.getInstance("SHA-256")
+    md.update((nonce + postData).getBytes)
+    val mac = Mac.getInstance("HmacSHA512")
+    mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
+    mac.update(path.getBytes)
+    new String(Base64.encodeBase64(mac.doFinal(md.digest())))
+  }
+
+  private def getSignedRequest(path: String, uri: Uri) = {
+    val nonce = nonceGenerator.apply
+    val postData = "nonce=" + nonce
+    val signature = getSignature(path, nonce, postData)
+    val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
+    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
+  }
+
+  def handleOrderRequest[A: JsonFormat](request: HttpRequest): Future[OrderResponse[A]] =
+    fireRequest(request)
+      .map(_.parseJson.convertTo[OrderResponse[A]])
+      .recover { case t: Throwable => OrderResponse[A](List(t.getMessage), None) }
+
   private def apiResponse[U: JsonFormat, M <: MessageResponse[U]](path: String,
                                                                   params: Option[Map[String, String]],
                                                                   mkM: Either[List[String], Map[String, U]] => M,
                                                                   sign: Boolean = false): Future[M] = {
 
-    def getSignature(path: String, nonce: String, postData: String) = {
-      // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
-      val md = MessageDigest.getInstance("SHA-256")
-      md.update((nonce + postData).getBytes)
-      val mac = Mac.getInstance("HmacSHA512")
-      mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
-      mac.update(path.getBytes)
-      new String(Base64.encodeBase64(mac.doFinal(md.digest())))
-    }
-
-    def getSignedRequest(path: String, uri: Uri) = {
-      val nonce = nonceGenerator.apply
-      val postData = "nonce=" + nonce
-      val signature = getSignature(path, nonce, postData)
-      val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
-      HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
-    }
-
-    def handle[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
+    def handleRequest[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
       fireRequest(request)
         .map(_.parseJson.convertTo[Response[T]])
         .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
@@ -95,8 +100,9 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
 
     val request = if (sign) getSignedRequest(path, uri) else HttpRequest(uri = uri)
 
-    handle[U](request).map(extractResponse)
+    handleRequest[U](request).map(extractResponse)
   }
+
 
   implicit def toOption(m: Map[String, String]): Option[Map[String, String]] = Some(m)
 
@@ -122,16 +128,26 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
-      val params = Map("asset" -> "ZEUR") // TODO: use asset from message
+      val params = asset.flatMap(value => Map("asset" -> value))
       apiResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
 
     case GetCurrentOpenOrders =>
       val path = "/0/private/OpenOrders"
-      apiResponse[String, CurrentOpenOrders](path, None, CurrentOpenOrders, sign = true).pipeTo(sender)
+
+      handleOrderRequest[OpenOrder](getSignedRequest(path, Uri(basePath + path))).map { resp =>
+        if (resp.error.nonEmpty) CurrentOpenOrders(Left(resp.error))
+        else if (resp.result.isDefined) CurrentOpenOrders(Right(resp.result.get.open.get))
+        else CurrentOpenOrders(Left(List("Something went wrong: response has no content.")))
+      }.pipeTo(sender)
 
     case GetCurrentClosedOrders =>
       val path = "/0/private/ClosedOrders"
-      apiResponse[String, CurrentClosedOrders](path, None, CurrentClosedOrders, sign = true).pipeTo(sender)
+      handleOrderRequest[ClosedOrder](getSignedRequest(path, Uri(basePath + path))).map { resp =>
+        if (resp.error.nonEmpty) CurrentClosedOrders(Left(resp.error))
+        else if (resp.result.isDefined) CurrentClosedOrders(Right(resp.result.get.closed.get))
+        else CurrentClosedOrders(Left(List("Something went wrong: response has no content.")))
+      }.pipeTo(sender)
+
   }
 
 

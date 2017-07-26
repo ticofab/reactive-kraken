@@ -39,28 +39,33 @@ object OrderType extends Enumeration {
 case class OrderDescription(pair: String,
                             buyOrSell: BuyOrSell,
                             orderType: OrderType,
-                            price: Double,
-                            price2: Double,
+                            price: String,
+                            price2: String,
                             leverage: String,
-                            order: String                           )
+                            order: String)
 
-case class Order(referralTransactionId: String,
-                 userReferenceId: String,
+case class Order(referralTransactionId: Option[String],
+                 userReferenceId: Option[String],
                  status: OrderStatus,
                  timestamp: Double,
                  startTime: Double,
                  expireTime: Double,
                  description: OrderDescription,
-                 volume: Double,
-                 volumenExecuted: Double,
-                 cost: Double,
-                 fee: Double,
-                 averagePrice: Double,
-                 misc: List[String],
-                 stopPrice: Option[Double],
-                 limitPrice: Option[Double],
-                 orderFlags: List[String],
+                 volume: String,
+                 volumeExecuted: String,
+                 cost: String,
+                 fee: String,
+                 averagePrice: String,
+                 misc: String,
+                 stopPrice: Option[String],
+                 limitPrice: Option[String],
+                 orderFlags: String,
                  trades: Option[List[String]])
+
+case class ClosedOrder(closed: Option[Map[String, Order]])
+
+case class OpenOrder(open: Option[Map[String, Order]])
+
 
 /*
 

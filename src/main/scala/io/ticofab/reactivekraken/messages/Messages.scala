@@ -1,6 +1,6 @@
 package io.ticofab.reactivekraken.messages
 
-import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker, TradeBalance}
+import io.ticofab.reactivekraken.model._
 
 sealed trait Message
 
@@ -31,6 +31,8 @@ case class CurrentAccountBalance(result: Either[List[String], Map[String, String
 
 case class CurrentTradeBalance(result: Either[List[String], Map[String, TradeBalance]]) extends MessageResponse[TradeBalance](result)
 
-case class CurrentOpenOrders(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
+abstract class OrderMessageResponse[T](result: Either[List[String], Map[String, T]])
 
-case class CurrentClosedOrders(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
+case class CurrentOpenOrders(result: Either[List[String], Map[String, Order]]) extends OrderMessageResponse[Order](result)
+
+case class CurrentClosedOrders(result: Either[List[String], Map[String, Order]]) extends OrderMessageResponse[Order](result)

@@ -16,10 +16,19 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model.{Asset, AssetPair, Ticker, TradeBalance}
-import spray.json.{DefaultJsonProtocol, JsonFormat}
+import io.ticofab.reactivekraken.model._
+import spray.json._
 
-case class Response[T](error: List[String], result: Option[Map[String, T]])
+class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T#Value] {
+  override def write(obj: T#Value): JsValue = JsString(obj.toString)
+
+  override def read(json: JsValue): T#Value = {
+    json match {
+      case JsString(txt) => enu.withName(txt)
+      case somethingElse => throw DeserializationException(s"Expected a value from enum $enu instead of $somethingElse")
+    }
+  }
+}
 
 trait JsonSupport extends DefaultJsonProtocol {
   implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
@@ -28,9 +37,23 @@ trait JsonSupport extends DefaultJsonProtocol {
     "fee_volume_currency", "margin_call", "margin_stop")
   implicit val tickerFormat = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
   implicit val tradeBalanceFormat = jsonFormat(TradeBalance, "eb", "tb", "m", "n", "c", "v", "e", "mf", "ml")
+  implicit val orderTypeFormat = new EnumJsonConverter(OrderType)
+  implicit val buyOrSellFormat = new EnumJsonConverter(BuyOrSell)
+  implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
+  implicit val descriptionFormat = jsonFormat(OrderDescription, "pair", "type", "ordertype", "price", "price2", "leverage", "order")
+  implicit val orderFormat = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
+    "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
+  implicit val openOrderFormat = jsonFormat(OpenOrder, "open")
+  implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
 }
+
+case class Response[T](error: List[String], result: Option[Map[String, T]])
+
+case class OrderResponse[T](error: List[String], result: Option[T])
 
 object JsonSupport extends DefaultJsonProtocol {
   implicit def responseFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
+
+  implicit def orderResponseFormat[T: JsonFormat] = jsonFormat2(OrderResponse.apply[T])
 }
 
