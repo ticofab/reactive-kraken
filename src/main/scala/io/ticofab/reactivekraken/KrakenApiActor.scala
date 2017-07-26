@@ -16,10 +16,6 @@ package io.ticofab.reactivekraken
   * limitations under the License.
   */
 
-import java.security.MessageDigest
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
@@ -30,7 +26,7 @@ import io.ticofab.reactivekraken.api.JsonSupport.{orderResponseFormat, responseF
 import io.ticofab.reactivekraken.api.{HttpRequestor, JsonSupport, OrderResponse, Response}
 import io.ticofab.reactivekraken.messages._
 import io.ticofab.reactivekraken.model._
-import org.apache.commons.codec.binary.Base64
+import io.ticofab.reactivekraken.signature.Signer
 import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,7 +34,7 @@ import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.Properties
 
-class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSupport with HttpRequestor {
+class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport with HttpRequestor {
 
   implicit val as = context.system
   implicit val am = ActorMaterializer()
@@ -55,22 +51,13 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
   private val apiSecret = loadVar("KRAKEN_API_SECRET")
   private val basePath = "https://api.kraken.com"
 
-  private def getSignature(path: String, nonce: String, postData: String) = {
-    // Message signature using HMAC-SHA512 of (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
-    val md = MessageDigest.getInstance("SHA-256")
-    md.update((nonce + postData).getBytes)
-    val mac = Mac.getInstance("HmacSHA512")
-    mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
-    mac.update(path.getBytes)
-    new String(Base64.encodeBase64(mac.doFinal(md.digest())))
-  }
 
   private def getSignedRequest(path: String, uri: Uri) = {
     val nonce = nonceGenerator.apply
-    val postData = "nonce=" + nonce
-    val signature = getSignature(path, nonce, postData)
+    val postData = "nonce=" + nonce.toString
+    val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
-    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce)).toEntity)
+    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce.toString)).toEntity)
   }
 
   def handleOrderRequest[A: JsonFormat](request: HttpRequest): Future[OrderResponse[A]] =
@@ -158,5 +145,5 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
 }
 
 object KrakenApiActor {
-  def apply(nonceGenerator: () => String) = Props(new KrakenApiActor(nonceGenerator))
+  def apply(nonceGenerator: () => Long) = Props(new KrakenApiActor(nonceGenerator))
 }

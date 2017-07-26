@@ -28,7 +28,7 @@ object KrakenApiStream {
   implicit val as = ActorSystem()
   implicit val am = ActorMaterializer()
 
-  def nonceGenerator = () => System.currentTimeMillis.toString
+  def nonceGenerator = () => System.currentTimeMillis
 
   def assetPairStream(currency: String, respectToCurrencty: String) = {
     val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))

@@ -29,7 +29,7 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
 
   val timeout = 10.seconds
 
-  def nonceGenerator = () => System.currentTimeMillis.toString
+  def nonceGenerator = () => System.currentTimeMillis
 
   val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
   val probe = TestProbe()

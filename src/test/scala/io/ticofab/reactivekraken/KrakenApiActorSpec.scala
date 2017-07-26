@@ -33,7 +33,7 @@ import scala.concurrent.duration._
 class KrakenApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with ImplicitSender
   with WordSpecLike with Matchers with MockitoSugar {
 
-  def nonceGenerator = () => System.currentTimeMillis.toString
+  def nonceGenerator = () => System.currentTimeMillis
 
   "A KrakenApiActor " should {
 

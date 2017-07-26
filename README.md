@@ -26,7 +26,16 @@ KRAKEN_API_KEY=<your api key>
 KRAKEN_API_SECRET=<your api secret>
 ```
 
-You can use this library in two ways:
+You can use this library in three ways:
+
+**Only the signing functionality**
+
+If you only need the logic to evaluate the signature, you can simply use
+
+```scala
+val signature = Signer.getSignature(path, nonce, postData, apiSecret)
+```
+See how the [KrakenApiActor](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/KrakenApiActor.scala) uses it.
 
 **Actor based usage**
 
