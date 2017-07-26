@@ -29,6 +29,7 @@ case class CurrentTicker(result: Either[List[String], Map[String, Ticker]]) exte
 
 case class CurrentAccountBalance(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
 
+// TODO: it's not a Map[String, TradeBalance], it's a TradeBalance object
 case class CurrentTradeBalance(result: Either[List[String], Map[String, TradeBalance]]) extends MessageResponse[TradeBalance](result)
 
 abstract class OrderMessageResponse(result: Either[List[String], Map[String, Order]])

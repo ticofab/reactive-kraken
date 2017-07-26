@@ -47,13 +47,9 @@ trait JsonSupport extends DefaultJsonProtocol {
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
 }
 
-case class Response[T](error: List[String], result: Option[Map[String, T]])
-
-case class OrderResponse[T](error: List[String], result: Option[T])
+case class Response[T](error: List[String], result: Option[T])
 
 object JsonSupport extends DefaultJsonProtocol {
   implicit def responseFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
-
-  implicit def orderResponseFormat[T: JsonFormat] = jsonFormat2(OrderResponse.apply[T])
 }
 
