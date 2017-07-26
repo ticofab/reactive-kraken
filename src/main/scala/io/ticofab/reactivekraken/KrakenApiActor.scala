@@ -78,6 +78,14 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
       .map(_.parseJson.convertTo[OrderResponse[A]])
       .recover { case t: Throwable => OrderResponse[A](List(t.getMessage), None) }
 
+  def extractOrderResponse[T, M](resp: OrderResponse[T],
+                                 mkU: Either[List[String], Map[String, Order]] => M,
+                                 mkO: OrderResponse[T] => Map[String, Order]) = {
+    if (resp.error.nonEmpty) mkU(Left(resp.error))
+    else if (resp.result.isDefined) mkU(Right(mkO(resp)))
+    else CurrentClosedOrders(Left(List("Something went wrong: response has no content.")))
+  }
+
   private def apiResponse[U: JsonFormat, M <: MessageResponse[U]](path: String,
                                                                   params: Option[Map[String, String]],
                                                                   mkM: Either[List[String], Map[String, U]] => M,
@@ -135,17 +143,13 @@ class KrakenApiActor(nonceGenerator: () => String) extends Actor with JsonSuppor
       val path = "/0/private/OpenOrders"
 
       handleOrderRequest[OpenOrder](getSignedRequest(path, Uri(basePath + path))).map { resp =>
-        if (resp.error.nonEmpty) CurrentOpenOrders(Left(resp.error))
-        else if (resp.result.isDefined) CurrentOpenOrders(Right(resp.result.get.open.get))
-        else CurrentOpenOrders(Left(List("Something went wrong: response has no content.")))
+        extractOrderResponse[OpenOrder, CurrentOpenOrders](resp, CurrentOpenOrders, _.result.get.open.get)
       }.pipeTo(sender)
 
     case GetCurrentClosedOrders =>
       val path = "/0/private/ClosedOrders"
       handleOrderRequest[ClosedOrder](getSignedRequest(path, Uri(basePath + path))).map { resp =>
-        if (resp.error.nonEmpty) CurrentClosedOrders(Left(resp.error))
-        else if (resp.result.isDefined) CurrentClosedOrders(Right(resp.result.get.closed.get))
-        else CurrentClosedOrders(Left(List("Something went wrong: response has no content.")))
+        extractOrderResponse[ClosedOrder, CurrentClosedOrders](resp, CurrentClosedOrders, _.result.get.closed.get)
       }.pipeTo(sender)
 
   }
