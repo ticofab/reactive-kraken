@@ -11,7 +11,7 @@ Available for Scala 2.11 and 2.12. In your build.sbt file,
 ```sbt
 resolvers += Resolver.jcenterRepo // you might not need this line
 
-libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.1.0"
+libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.2.0"
 ```
 
 Usage
@@ -43,12 +43,15 @@ Instantiate a `KrakenApiActor` and talk to it. As per specs, you need to pass a 
  
 Follows a table with the messages it can receive and the responses it will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
 
-| Kraken API | Message | Example | Response | 
-| ------------- | ------------- | ----- | ----- |
-| Get asset info |  GetCurrentAssets | `GetCurrentAssets` | CurrentAssets | 
-| Get tradable asset pairs | GetCurrentAssetPair | `GetCurrentAssetPair("ETH", "EUR")` | CurrentAssetPair |
-| Get ticker information | GetCurrentTicker | `GetCurrentTicker("ETH", "EUR")` | CurrentTicker |
-| Get account balance | GetCurrentAccountBalance  | `GetCurrentAccountBalance` | CurrentAccountBalance |
+| Message | Example | Response | 
+| ------- | ------- | -------- |
+| GetCurrentAssets | `GetCurrentAssets` | CurrentAssets | 
+| GetCurrentAssetPair | `GetCurrentAssetPair("ETH", "EUR")` | CurrentAssetPair |
+| GetCurrentTicker | `GetCurrentTicker("ETH", "EUR")` | CurrentTicker |
+| GetCurrentAccountBalance  | `GetCurrentAccountBalance` | CurrentAccountBalance |
+| GetCurrentTradeBalance  | `GetCurrentTradeBalance` | CurrentTradeBalance |
+| GetCurrentOpenOrders  | `GetCurrentOpenOrders` | CurrentOpenOrders |
+| GetCurrentClosedOrder  | `GetCurrentClosedOrders` | CurrentClosedOrders |
 
 Example:
 ```scala
