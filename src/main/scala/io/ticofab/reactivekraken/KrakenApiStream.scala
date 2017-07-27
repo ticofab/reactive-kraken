@@ -20,6 +20,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
+import io.ticofab.reactivekraken.messages._
 
 import scala.concurrent.duration._
 
@@ -27,7 +28,7 @@ object KrakenApiStream {
   implicit val as = ActorSystem()
   implicit val am = ActorMaterializer()
 
-  def nonceGenerator = () => System.currentTimeMillis.toString
+  def nonceGenerator = () => System.currentTimeMillis
 
   def assetPairStream(currency: String, respectToCurrencty: String) = {
     val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))

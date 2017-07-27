@@ -1,7 +1,7 @@
 Reactive Kraken
 ===============
 
-Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api#general-usage) in a reactive way. Work in progress and contributions are very welcome.
+Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api) in a reactive way. Work in progress and contributions are very welcome.
 
 Import via SBT
 --------------
@@ -26,7 +26,16 @@ KRAKEN_API_KEY=<your api key>
 KRAKEN_API_SECRET=<your api secret>
 ```
 
-You can use this library in two ways:
+You can use this library in three ways:
+
+**Only the signing functionality**
+
+If you only need the logic to evaluate the signature, you can simply use
+
+```scala
+val signature = Signer.getSignature(path, nonce, postData, apiSecret)
+```
+See how the [KrakenApiActor](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/KrakenApiActor.scala) uses it.
 
 **Actor based usage**
 
@@ -43,7 +52,7 @@ Follows a table with the messages it can receive and the responses it will outpu
 
 Example:
 ```scala
-def nonceGenerator = () => System.currentTimeMillis.toString
+def nonceGenerator = () => System.currentTimeMillis
 val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
 (apiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
 ```

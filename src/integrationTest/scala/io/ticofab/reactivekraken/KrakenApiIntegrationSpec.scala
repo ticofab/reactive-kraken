@@ -19,6 +19,7 @@ package io.ticofab.reactivekraken
 import akka.actor.ActorSystem
 import akka.testkit.{TestKit, TestProbe}
 import io.ticofab.reactivekraken.api.JsonSupport
+import io.ticofab.reactivekraken.messages._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
@@ -28,7 +29,7 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
 
   val timeout = 10.seconds
 
-  def nonceGenerator = () => System.currentTimeMillis.toString
+  def nonceGenerator = () => System.currentTimeMillis
 
   val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
   val probe = TestProbe()
@@ -64,6 +65,30 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
       probe.send(apiActor, GetCurrentAccountBalance)
       probe.expectMsgPF(timeout) {
         case cab: CurrentAccountBalance => println(cab)
+        case _ => fail("wrong message")
+      }
+    }
+
+    "Return the current trade balance" in {
+      probe.send(apiActor, GetCurrentTradeBalance())
+      probe.expectMsgPF(timeout) {
+        case ctb: CurrentTradeBalance => println(ctb)
+        case _ => fail("wrong message")
+      }
+    }
+
+    "Return the current open orders" in {
+      probe.send(apiActor, GetCurrentOpenOrders)
+      probe.expectMsgPF(timeout) {
+        case coo: CurrentOpenOrders => println(coo)
+        case _ => fail("wrong message")
+      }
+    }
+
+    "Return the current closed orders" in {
+      probe.send(apiActor, GetCurrentClosedOrders)
+      probe.expectMsgPF(timeout) {
+        case cco: CurrentClosedOrders => println(cco)
         case _ => fail("wrong message")
       }
     }
