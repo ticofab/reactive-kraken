@@ -18,22 +18,18 @@ case object GetCurrentOpenOrders
 
 case object GetCurrentClosedOrders
 
+case class CurrentAssets(result: Either[List[String], Map[String, Asset]])
 
-abstract class MessageResponse[T](result: Either[List[String], Map[String, T]]) extends Message
+case class CurrentAssetPair(result: Either[List[String], Map[String, AssetPair]])
 
-case class CurrentAssets(result: Either[List[String], Map[String, Asset]]) extends MessageResponse[Asset](result)
+case class CurrentTicker(result: Either[List[String], Map[String, Ticker]])
 
-case class CurrentAssetPair(result: Either[List[String], Map[String, AssetPair]]) extends MessageResponse[AssetPair](result)
+case class CurrentAccountBalance(result: Either[List[String], Map[String, String]])
 
-case class CurrentTicker(result: Either[List[String], Map[String, Ticker]]) extends MessageResponse[Ticker](result)
-
-case class CurrentAccountBalance(result: Either[List[String], Map[String, String]]) extends MessageResponse[String](result)
-
-// TODO: it's not a Map[String, TradeBalance], it's a TradeBalance object
-case class CurrentTradeBalance(result: Either[List[String], Map[String, TradeBalance]]) extends MessageResponse[TradeBalance](result)
+case class CurrentTradeBalance(result: Either[List[String], TradeBalance])
 
 abstract class OrderMessageResponse(result: Either[List[String], Map[String, Order]])
 
-case class CurrentOpenOrders(result: Either[List[String], Map[String, Order]]) extends OrderMessageResponse(result)
+case class CurrentOpenOrders(result: Either[List[String], Map[String, Order]])
 
-case class CurrentClosedOrders(result: Either[List[String], Map[String, Order]]) extends OrderMessageResponse(result)
+case class CurrentClosedOrders(result: Either[List[String], Map[String, Order]])

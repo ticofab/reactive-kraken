@@ -52,7 +52,7 @@ Follows a table with the messages it can receive and the responses it will outpu
 
 Example:
 ```scala
-def nonceGenerator = () => System.currentTimeMillis.toString
+def nonceGenerator = () => System.currentTimeMillis
 val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
 (apiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
 ```

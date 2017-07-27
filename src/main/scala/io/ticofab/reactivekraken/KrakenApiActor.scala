@@ -67,14 +67,15 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce.toString)).toEntity)
   }
 
-  private def handleRequest[T: JsonFormat](request: HttpRequest): Future[Response[T]] =
+  private def handleRequest[RESPONSE_CONTENT_TYPE: JsonFormat](request: HttpRequest): Future[Response[RESPONSE_CONTENT_TYPE]] =
     fireRequest(request)
-      .map(_.parseJson.convertTo[Response[T]])
-      .recover { case t: Throwable => Response[T](List(t.getMessage), None) }
+      .map(_.parseJson.convertTo[Response[RESPONSE_CONTENT_TYPE]])
+      .recover { case t: Throwable => Response[RESPONSE_CONTENT_TYPE](List(t.getMessage), None) }
 
-  private def extractMessage[TYPE, MESSAGE, CONTENT](resp: Response[TYPE],
-                                                     messageFactory: Either[List[String], CONTENT] => MESSAGE,
-                                                     contentFactory: Response[TYPE] => CONTENT): MESSAGE = {
+  private def extractMessage[RESPONSE_CONTENT_TYPE, MESSAGE_TYPE, MESSAGE_CONTENT_TYPE]
+  (resp: Response[RESPONSE_CONTENT_TYPE],
+   messageFactory: Either[List[String], MESSAGE_CONTENT_TYPE] => MESSAGE_TYPE,
+   contentFactory: Response[RESPONSE_CONTENT_TYPE] => MESSAGE_CONTENT_TYPE): MESSAGE_TYPE = {
     if (resp.error.nonEmpty) messageFactory(Left(resp.error))
     else if (resp.result.isDefined) messageFactory(Right(contentFactory(resp)))
     else messageFactory(Left(List("Something went wrong: response has no content.")))
@@ -97,22 +98,30 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
       val request = getRequest(path, params)
       handleRequest[Map[String, AssetPair]](request).map { resp =>
         extractMessage[Map[String, AssetPair], CurrentAssetPair, Map[String, AssetPair]](resp, CurrentAssetPair, _.result.get)
-      }
+      }.pipeTo(sender)
 
-//    case GetCurrentTicker(currency, respectToCurrency) =>
-//      val path = "/0/public/Ticker"
-//      val params = Map("pair" -> (currency + respectToCurrency))
-//      val request = getRequest(path, params)
-//      apiResponse[Ticker, CurrentTicker](path, params, CurrentTicker).pipeTo(sender)
+    case GetCurrentTicker(currency, respectToCurrency) =>
+      val path = "/0/public/Ticker"
+      val params = Map("pair" -> (currency + respectToCurrency))
+      val request = getRequest(path, params)
+      handleRequest[Map[String, Ticker]](request).map { resp =>
+        extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](resp, CurrentTicker, _.result.get)
+      }.pipeTo(sender)
 
-    //    case GetCurrentAccountBalance =>
-    //      val path = "/0/private/Balance"
-    //      apiResponse[String, CurrentAccountBalance](path, None, CurrentAccountBalance, sign = true).pipeTo(sender)
-    //
-    //    case GetCurrentTradeBalance(asset) =>
-    //      val path = "/0/private/TradeBalance"
-    //      val params = asset.flatMap(value => Map("asset" -> value))
-    //      apiResponse[TradeBalance, CurrentTradeBalance](path, params, CurrentTradeBalance, sign = true).pipeTo(sender)
+    case GetCurrentAccountBalance =>
+      val path = "/0/private/Balance"
+      val request = getRequest(path, None, sign = true)
+      handleRequest[Map[String, String]](request).map { resp =>
+        extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](resp, CurrentAccountBalance, _.result.get)
+      }.pipeTo(sender)
+
+    case GetCurrentTradeBalance(asset) =>
+      val path = "/0/private/TradeBalance"
+      val params = asset.flatMap(value => Map("asset" -> value))
+      val request = getRequest(path, params, sign = true)
+      handleRequest[TradeBalance](request).map { resp =>
+        extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](resp, CurrentTradeBalance, _.result.get)
+      }.pipeTo(sender)
 
     case GetCurrentOpenOrders =>
       val path = "/0/private/OpenOrders"
@@ -129,7 +138,6 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
       }.pipeTo(sender)
 
   }
-
 
 }
 
