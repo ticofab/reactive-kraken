@@ -52,19 +52,21 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
   private val basePath = "https://api.kraken.com"
 
   private def getRequest(path: String, params: Option[Map[String, String]] = None, sign: Boolean = false): HttpRequest = {
+
+    def getSignedRequest(path: String, uri: Uri) = {
+      val nonce = nonceGenerator.apply
+      val postData = "nonce=" + nonce.toString
+      val signature = Signer.getSignature(path, nonce, postData, apiSecret)
+      val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
+      HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce.toString)).toEntity)
+    }
+
     val uri = params match {
       case Some(value) => Uri(basePath + path).withQuery(Query(value))
       case None => Uri(basePath + path)
     }
-    if (sign) getSignedRequest(path, uri) else HttpRequest(uri = uri)
-  }
 
-  private def getSignedRequest(path: String, uri: Uri) = {
-    val nonce = nonceGenerator.apply
-    val postData = "nonce=" + nonce.toString
-    val signature = Signer.getSignature(path, nonce, postData, apiSecret)
-    val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
-    HttpRequest(HttpMethods.POST, uri, headers, FormData(Map("nonce" -> nonce.toString)).toEntity)
+    if (sign) getSignedRequest(path, uri) else HttpRequest(uri = uri)
   }
 
   private def handleRequest[RESPONSE_CONTENT_TYPE: JsonFormat](request: HttpRequest): Future[Response[RESPONSE_CONTENT_TYPE]] =
