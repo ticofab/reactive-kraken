@@ -43,15 +43,15 @@ Instantiate a `KrakenApiActor` and talk to it. As per specs, you need to pass a 
  
 Follows a table with the messages it can receive and the responses it will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
 
-| Message | Example | Response | 
-| ------- | ------- | -------- |
-| GetCurrentAssets | `GetCurrentAssets` | CurrentAssets | 
-| GetCurrentAssetPair | `GetCurrentAssetPair("ETH", "EUR")` | CurrentAssetPair |
-| GetCurrentTicker | `GetCurrentTicker("ETH", "EUR")` | CurrentTicker |
-| GetCurrentAccountBalance  | `GetCurrentAccountBalance` | CurrentAccountBalance |
-| GetCurrentTradeBalance  | `GetCurrentTradeBalance` | CurrentTradeBalance |
-| GetCurrentOpenOrders  | `GetCurrentOpenOrders` | CurrentOpenOrders |
-| GetCurrentClosedOrder  | `GetCurrentClosedOrders` | CurrentClosedOrders |
+| Message | Response | 
+| ------- | -------- |
+| `GetCurrentAssets` | `CurrentAssets` | 
+| `GetCurrentAssetPair("ETH", "EUR")` | `CurrentAssetPair` |
+| `GetCurrentTicker("ETH", "EUR")` | `CurrentTicker` |
+| `GetCurrentAccountBalance` | `CurrentAccountBalance` |
+| `GetCurrentTradeBalance` | `CurrentTradeBalance` |
+| `GetCurrentOpenOrders` | `CurrentOpenOrders` |
+| `GetCurrentClosedOrders` | `CurrentClosedOrders` |
 
 Example:
 ```scala
