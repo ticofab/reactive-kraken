@@ -51,6 +51,14 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
   private val apiSecret = loadVar("KRAKEN_API_SECRET")
   private val basePath = "https://api.kraken.com"
 
+  /**
+    * Creates the HTTP request to fire
+    *
+    * @param path   The request path.
+    * @param params The request query params.
+    * @param sign   Boolean that specifies whether the request has to be signed for authentication or not.
+    * @return The appropriate HTTP request to fire.
+    */
   private def getRequest(path: String, params: Option[Map[String, String]] = None, sign: Boolean = false): HttpRequest = {
 
     def getSignedRequest(path: String, uri: Uri) = {
@@ -69,11 +77,29 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     if (sign) getSignedRequest(path, uri) else HttpRequest(uri = uri)
   }
 
+  /**
+    * Fires an HTTP request and converts the result to the appropriate type
+    *
+    * @param request The HTTP request to fire
+    * @tparam RESPONSE_CONTENT_TYPE The type of the content expected in case of successful response
+    * @return A future of the typed Response
+    */
   private def handleRequest[RESPONSE_CONTENT_TYPE: JsonFormat](request: HttpRequest): Future[Response[RESPONSE_CONTENT_TYPE]] =
     fireRequest(request)
       .map(_.parseJson.convertTo[Response[RESPONSE_CONTENT_TYPE]])
       .recover { case t: Throwable => Response[RESPONSE_CONTENT_TYPE](List(t.getMessage), None) }
 
+  /**
+    * Extracts the content of a parsed HTTP response and encapsulates it in the proper response message class.
+    *
+    * @param resp           The typed response from the HTTP request
+    * @param messageFactory Function to create the message
+    * @param contentFactory Function to create the message content
+    * @tparam RESPONSE_CONTENT_TYPE The content of the response
+    * @tparam MESSAGE_TYPE          Type of the message
+    * @tparam MESSAGE_CONTENT_TYPE  Type of the message content
+    * @return The message to send back to the sender
+    */
   private def extractMessage[RESPONSE_CONTENT_TYPE, MESSAGE_TYPE, MESSAGE_CONTENT_TYPE]
   (resp: Response[RESPONSE_CONTENT_TYPE],
    messageFactory: Either[List[String], MESSAGE_CONTENT_TYPE] => MESSAGE_TYPE,
@@ -82,8 +108,6 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     else if (resp.result.isDefined) messageFactory(Right(contentFactory(resp)))
     else messageFactory(Left(List("Something went wrong: response has no content.")))
   }
-
-  implicit def toOption(m: Map[String, String]): Option[Map[String, String]] = Some(m)
 
   override def receive = {
 
@@ -97,7 +121,7 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     case GetCurrentAssetPair(currency, respectToCurrency) =>
       val path = "/0/public/AssetPairs"
       val params = Map("pair" -> (currency + respectToCurrency))
-      val request = getRequest(path, params)
+      val request = getRequest(path, Some(params))
       handleRequest[Map[String, AssetPair]](request).map { resp =>
         extractMessage[Map[String, AssetPair], CurrentAssetPair, Map[String, AssetPair]](resp, CurrentAssetPair, _.result.get)
       }.pipeTo(sender)
@@ -105,7 +129,7 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     case GetCurrentTicker(currency, respectToCurrency) =>
       val path = "/0/public/Ticker"
       val params = Map("pair" -> (currency + respectToCurrency))
-      val request = getRequest(path, params)
+      val request = getRequest(path, Some(params))
       handleRequest[Map[String, Ticker]](request).map { resp =>
         extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](resp, CurrentTicker, _.result.get)
       }.pipeTo(sender)
@@ -119,7 +143,7 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
-      val params = asset.flatMap(value => Map("asset" -> value))
+      val params = asset.flatMap(value => Some(Map("asset" -> value)))
       val request = getRequest(path, params, sign = true)
       handleRequest[TradeBalance](request).map { resp =>
         extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](resp, CurrentTradeBalance, _.result.get)
