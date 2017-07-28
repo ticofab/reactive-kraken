@@ -6,6 +6,10 @@ sealed trait Message
 
 sealed trait MessageResponse
 
+sealed trait MessageError
+
+// ---- message that can be sent to the KrakenApiActor
+
 case object GetCurrentAssets extends Message
 
 case class GetCurrentAssetPair(currency: String, respectToCurrency: String) extends Message
@@ -19,6 +23,8 @@ case class GetCurrentTradeBalance(asset: Option[String] = None) extends Message
 case object GetCurrentOpenOrders extends Message
 
 case object GetCurrentClosedOrders extends Message
+
+// ---- responses from the KrakenApiActor
 
 case class CurrentAssets(result: Either[List[String], Map[String, Asset]]) extends MessageResponse
 
@@ -35,3 +41,5 @@ abstract class OrderMessageResponse(result: Either[List[String], Map[String, Ord
 case class CurrentOpenOrders(result: Either[List[String], Map[String, Order]]) extends MessageResponse
 
 case class CurrentClosedOrders(result: Either[List[String], Map[String, Order]]) extends MessageResponse
+
+case class KrakenApiActorError(error: String) extends MessageResponse
