@@ -96,7 +96,7 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     * @param messageFactory Function to create the message
     * @param contentFactory Function to create the message content
     * @tparam RESPONSE_CONTENT_TYPE The content of the response
-    * @tparam MESSAGE_TYPE          Type of the message
+    * @tparam MESSAGE_TYPE          Type of the message 
     * @tparam MESSAGE_CONTENT_TYPE  Type of the message content
     * @return The message to send back to the sender
     */
@@ -114,54 +114,54 @@ class KrakenApiActor(nonceGenerator: () => Long) extends Actor with JsonSupport 
     case GetCurrentAssets =>
       val path = "/0/public/Assets"
       val request = getRequest(path)
-      handleRequest[Map[String, Asset]](request).map { resp =>
-        extractMessage[Map[String, Asset], CurrentAssets, Map[String, Asset]](resp, CurrentAssets, _.result.get)
-      }.pipeTo(sender)
+      handleRequest[Map[String, Asset]](request)
+        .map(extractMessage[Map[String, Asset], CurrentAssets, Map[String, Asset]](_, CurrentAssets, _.result.get))
+        .pipeTo(sender)
 
     case GetCurrentAssetPair(currency, respectToCurrency) =>
       val path = "/0/public/AssetPairs"
       val params = Map("pair" -> (currency + respectToCurrency))
       val request = getRequest(path, Some(params))
-      handleRequest[Map[String, AssetPair]](request).map { resp =>
-        extractMessage[Map[String, AssetPair], CurrentAssetPair, Map[String, AssetPair]](resp, CurrentAssetPair, _.result.get)
-      }.pipeTo(sender)
+      handleRequest[Map[String, AssetPair]](request)
+        .map(extractMessage[Map[String, AssetPair], CurrentAssetPair, Map[String, AssetPair]](_, CurrentAssetPair, _.result.get))
+        .pipeTo(sender)
 
     case GetCurrentTicker(currency, respectToCurrency) =>
       val path = "/0/public/Ticker"
       val params = Map("pair" -> (currency + respectToCurrency))
       val request = getRequest(path, Some(params))
-      handleRequest[Map[String, Ticker]](request).map { resp =>
-        extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](resp, CurrentTicker, _.result.get)
-      }.pipeTo(sender)
+      handleRequest[Map[String, Ticker]](request)
+        .map(extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](_, CurrentTicker, _.result.get))
+        .pipeTo(sender)
 
     case GetCurrentAccountBalance =>
       val path = "/0/private/Balance"
       val request = getRequest(path, None, sign = true)
-      handleRequest[Map[String, String]](request).map { resp =>
-        extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](resp, CurrentAccountBalance, _.result.get)
-      }.pipeTo(sender)
+      handleRequest[Map[String, String]](request)
+        .map(extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](_, CurrentAccountBalance, _.result.get))
+        .pipeTo(sender)
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
       val params = asset.flatMap(value => Some(Map("asset" -> value)))
       val request = getRequest(path, params, sign = true)
-      handleRequest[TradeBalance](request).map { resp =>
-        extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](resp, CurrentTradeBalance, _.result.get)
-      }.pipeTo(sender)
+      handleRequest[TradeBalance](request)
+        .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
+        .pipeTo(sender)
 
     case GetCurrentOpenOrders =>
       val path = "/0/private/OpenOrders"
       val request = getRequest(path, None, sign = true)
-      handleRequest[OpenOrder](request).map { resp =>
-        extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](resp, CurrentOpenOrders, _.result.get.open.get)
-      }.pipeTo(sender)
+      handleRequest[OpenOrder](request)
+        .map(extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](_, CurrentOpenOrders, _.result.get.open.get))
+        .pipeTo(sender)
 
     case GetCurrentClosedOrders =>
       val path = "/0/private/ClosedOrders"
       val request = getRequest(path, None, sign = true)
-      handleRequest[ClosedOrder](request).map { resp =>
-        extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](resp, CurrentClosedOrders, _.result.get.closed.get)
-      }.pipeTo(sender)
+      handleRequest[ClosedOrder](request)
+        .map(extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](_, CurrentClosedOrders, _.result.get.closed.get))
+        .pipeTo(sender)
 
   }
 
