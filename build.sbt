@@ -17,9 +17,9 @@
 
 name := """reactive-kraken"""
 
-version := "0.2.0"
+version := "0.3.0"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.3"
 
 organization := "io.ticofab"
 
@@ -49,7 +49,7 @@ libraryDependencies ++= {
     "org.scalatest" %% "scalatest" % "3.0.1" % "test, it",
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test, it",
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test, it",
-    "org.mockito" % "mockito-core" % "2.3.11" % "test, it"
+    "org.mockito" % "mockito-core" % "2.8.47" % "test, it"
 
   )
 
