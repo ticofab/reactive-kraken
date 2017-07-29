@@ -6,8 +6,6 @@ sealed trait Message
 
 sealed trait MessageResponse
 
-sealed trait MessageError
-
 // ---- message that can be sent to the KrakenApiActor
 
 case object GetCurrentAssets extends Message
