@@ -14,18 +14,13 @@ libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.2.0"
 
 ## Usage
 
-The Kraken API and its available data is described here: https://www.kraken.com/help/api . Check the test package of this project for some examples.
+The Kraken API and its available data is described here: https://www.kraken.com/help/api . Check the test package of this project for some examples. You can use this library in three ways.
 
-If you want to access your private data, you need to provide your API key & API secret as environment variables, namely
- 
-```bash
-KRAKEN_API_KEY=<your api key>
-KRAKEN_API_SECRET=<your api secret>
-```
+1. Signing functionality only
+2. Actor based usage
+3. Stream based usage
 
-You can use this library in three ways:
-
-#### Only the signing functionality
+#### Signing functionality only
 
 If you only need the logic to evaluate the signature, you can simply use
 
@@ -36,7 +31,7 @@ See how the [KrakenApiActor](https://github.com/ticofab/reactive-kraken/blob/mas
 
 #### Actor based usage
 
-Instantiate a `KrakenApiActor` and talk to it. As per specs, you need to pass a nonce generator.
+Instantiate a `KrakenApiActor` and talk to it. As per specs, you need to pass a nonce generator. If you need to query authenticated endpoint (such as the account balance), you need to pass your API key and API secret to the actor. 
  
 Follows a table with the messages it can receive and the responses it will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
 
@@ -53,7 +48,7 @@ Follows a table with the messages it can receive and the responses it will outpu
 Example:
 ```scala
 def nonceGenerator = () => System.currentTimeMillis
-val apiActor = system.actorOf(KrakenApiActor(nonceGenerator))
+val apiActor = system.actorOf(KrakenApiActor(nonceGenerator, Some(myApiKey), Some(myApiSecret)))
 (apiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
 ```
 
