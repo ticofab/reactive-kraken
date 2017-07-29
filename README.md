@@ -9,7 +9,7 @@ Available for Scala 2.11 and 2.12. In your build.sbt file,
 ```sbt
 resolvers += Resolver.jcenterRepo // you might not need this line
 
-libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.2.0"
+libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.3.0"
 ```
 
 ## Usage
