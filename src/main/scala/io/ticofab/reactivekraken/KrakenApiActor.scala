@@ -69,8 +69,8 @@ class KrakenApiActor(nonceGenerator: () => Long,
   private def getSignedRequest(path: String,
                                apiKey: String,
                                apiSecret: String,
+                               nonce: Long,
                                params: Option[Map[String, String]] = None) = {
-    val nonce = nonceGenerator.apply
     val postData = "nonce=" + nonce.toString
     val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
@@ -119,11 +119,12 @@ class KrakenApiActor(nonceGenerator: () => Long,
     * @return A message to send back to the original sender.
     */
   def getAuthenticatedAPIResponseMessage(path: String,
+                                         nonce: Long,
                                          getResponse: HttpRequest => Future[MessageResponse],
                                          params: Option[Map[String, String]] = None): Future[MessageResponse] =
     credentials match {
       case None => Future(KrakenApiActorError(s"Credentials are required for this request"))
-      case Some((key, secret)) => getResponse(getSignedRequest(path, key, secret, params))
+      case Some((key, secret)) => getResponse(getSignedRequest(path, key, secret, nonce, params))
     }
 
   override def receive = {
@@ -153,28 +154,32 @@ class KrakenApiActor(nonceGenerator: () => Long,
 
     case GetCurrentAccountBalance =>
       val path = "/0/private/Balance"
+      val nonce = nonceGenerator.apply
       val f = (request: HttpRequest) => handleRequest[Map[String, String]](request)
         .map(extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](_, CurrentAccountBalance, _.result.get))
-      getAuthenticatedAPIResponseMessage(path, f).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(path, nonce, f).pipeTo(sender)
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
       val params = asset.flatMap(value => Some(Map("asset" -> value)))
+      val nonce = nonceGenerator.apply
       val f = (request: HttpRequest) => handleRequest[TradeBalance](request)
         .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
-      getAuthenticatedAPIResponseMessage(path, f, params).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(path, nonce, f, params).pipeTo(sender)
 
     case GetCurrentOpenOrders =>
       val path = "/0/private/OpenOrders"
+      val nonce = nonceGenerator.apply
       val f = (request: HttpRequest) => handleRequest[OpenOrder](request)
         .map(extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](_, CurrentOpenOrders, _.result.get.open.get))
-      getAuthenticatedAPIResponseMessage(path, f).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(path, nonce, f).pipeTo(sender)
 
     case GetCurrentClosedOrders =>
       val path = "/0/private/ClosedOrders"
+      val nonce = nonceGenerator.apply
       val f = (request: HttpRequest) => handleRequest[ClosedOrder](request)
         .map(extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](_, CurrentClosedOrders, _.result.get.closed.get))
-      getAuthenticatedAPIResponseMessage(path, f).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(path, nonce, f).pipeTo(sender)
   }
 
 }
