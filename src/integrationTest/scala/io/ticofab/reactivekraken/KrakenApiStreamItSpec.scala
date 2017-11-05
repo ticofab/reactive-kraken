@@ -24,7 +24,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 
-class KrakenApiStreamIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
+class KrakenApiStreamItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
   with WordSpecLike with Matchers with BeforeAndAfterAll with JsonSupport {
 
   implicit val as = system

@@ -27,8 +27,8 @@ import scala.concurrent.duration._
 
 trait HttpRequestor {
 
-  protected implicit val as: ActorSystem
-  protected implicit val am: ActorMaterializer
+  protected implicit val actorSystem: ActorSystem
+  protected implicit val materializer: ActorMaterializer
 
   def fireRequest(request: HttpRequest): Future[String] =
     Http().singleRequest(request)

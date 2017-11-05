@@ -31,6 +31,7 @@ class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T
 }
 
 trait JsonSupport extends DefaultJsonProtocol {
+  implicit val timeFormat = jsonFormat(ServerTime, "unixtime", "rfc1123")
   implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
   implicit val assetPairFormat = jsonFormat(AssetPair, "altname", "aclass_base", "base", "aclass_quote", "quote", "lot",
     "pair_decimals", "lot_decimals", "lot_multiplier", "leverage_buy", "leverage_sell", "fees", "fees_maker",
@@ -45,11 +46,8 @@ trait JsonSupport extends DefaultJsonProtocol {
     "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
   implicit val openOrderFormat = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
+  implicit def httpResponseTFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
 }
 
 case class Response[T](error: List[String], result: Option[T])
-
-object JsonSupport extends DefaultJsonProtocol {
-  implicit def responseFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
-}
 
