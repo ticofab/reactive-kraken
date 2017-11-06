@@ -64,6 +64,22 @@ class KrakenPublicApiActor(val nonceGenerator: () => Long) extends Actor with Re
       handleRequest[Map[String, Ticker]](request)
         .map(extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](_, CurrentTicker, _.result.get))
         .pipeTo(sender)
+
+    case GetOHLC(currency, respectToCurrency, interval) =>
+      val path = "/0/public/OHLC"
+      val params = Map("pair" -> (currency + respectToCurrency), "interval" -> interval.toString)
+      val request = HttpRequest(uri = getUri(path, Some(params)))
+      handleRequest[OHLCData](request)
+        .map(extractMessage[OHLCData, OHLCResponse, OHLCData](_, OHLCResponse, _.result.get))
+        .pipeTo(sender)
+
+    case GetOHLCSince(currency, respectToCurrency, timeStamp) =>
+      val path = "/0/public/OHLC"
+      val params = Map("pair" -> (currency + respectToCurrency), "since" -> timeStamp.toString)
+      val request = HttpRequest(uri = getUri(path, Some(params)))
+      handleRequest[OHLCData](request)
+        .map(extractMessage[OHLCData, OHLCResponse, OHLCData](_, OHLCResponse, _.result.get))
+        .pipeTo(sender)
   }
 
 }
@@ -75,9 +91,12 @@ object KrakenPublicApiActor {
   case object GetCurrentAssets extends Message
   case class GetCurrentAssetPair(currency: String, respectToCurrency: String) extends Message
   case class GetCurrentTicker(currency: String, respectToCurrency: String) extends Message
+  case class GetOHLC(currency: String, respectToCurrency: String, interval: Int = 1) extends Message
+  case class GetOHLCSince(currency: String, respectToCurrency: String, timeStamp: Long) extends Message
 
   case class CurrentServerTime(result: Either[List[String], ServerTime]) extends MessageResponse
   case class CurrentAssets(result: Either[List[String], Map[String, Asset]]) extends MessageResponse
   case class CurrentAssetPair(result: Either[List[String], Map[String, AssetPair]]) extends MessageResponse
   case class CurrentTicker(result: Either[List[String], Map[String, Ticker]]) extends MessageResponse
+  case class OHLCResponse(result: Either[List[String], OHLCData]) extends MessageResponse
 }

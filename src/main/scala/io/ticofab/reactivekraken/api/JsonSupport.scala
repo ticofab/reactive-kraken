@@ -31,6 +31,8 @@ class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T
 }
 
 trait JsonSupport extends DefaultJsonProtocol {
+  implicit def pimpedJsonObject(jsObj: JsObject) = new PimpedJsonObject(jsObj)
+
   implicit val timeFormat = jsonFormat(ServerTime, "unixtime", "rfc1123")
   implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
   implicit val assetPairFormat = jsonFormat(AssetPair, "altname", "aclass_base", "base", "aclass_quote", "quote", "lot",
@@ -46,7 +48,48 @@ trait JsonSupport extends DefaultJsonProtocol {
     "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
   implicit val openOrderFormat = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
-  implicit def httpResponseTFormat[T: JsonFormat] = jsonFormat2(Response.apply[T])
+  implicit def httpResponseTFormat[T: JsonFormat]: RootJsonFormat[Response[T]] = jsonFormat2(Response.apply[T])
+
+  implicit def tuple8Format[A :JsonFormat, B :JsonFormat, C :JsonFormat, D :JsonFormat, E :JsonFormat, F: JsonFormat, G: JsonFormat, H:JsonFormat] = {
+    new RootJsonFormat[(A, B, C, D, E, F, G, H)] {
+      def write(t: (A, B, C, D, E, F, G, H)) = JsArray(t._1.toJson, t._2.toJson, t._3.toJson, t._4.toJson, t._5.toJson, t._6.toJson, t._7.toJson, t._8.toJson)
+      def read(value: JsValue) = value match {
+        case JsArray(Seq(a, b, c, d, e, f, g, h)) =>
+          (a.convertTo[A], b.convertTo[B], c.convertTo[C], d.convertTo[D], e.convertTo[E], f.convertTo[F], g.convertTo[G], h.convertTo[H])
+        case x => deserializationError("Expected Tuple8 as JsArray, but got " + x)
+      }
+    }
+  }
+
+  implicit val ohlcRowFormat = new JsonFormat[OHLCRow] {
+    type OHLCRowTuple = Tuple8[Long, String, String, String, String, String, String, Int]
+
+    override def read(js: JsValue) = {
+      OHLCRow.tupled(js.convertTo[OHLCRowTuple])
+    }
+
+    override def write(obj: OHLCRow) = OHLCRow.unapply(obj).get.toJson
+  }
+
+  implicit val ohlcReader = new JsonFormat[OHLCData] {
+    override def read(js: JsValue) = {
+      val fields = js.asJsObject.fields
+      val id = fields("last").convertTo[Long]
+      val data = fields.filterKeys(_ != "last").map(kv => kv._1 -> kv._2.convertTo[Seq[OHLCRow]])
+      OHLCData(data,id)
+    }
+
+    override def write(obj: OHLCData) = obj.data.toJson.asJsObject ++ ("last" -> obj.timeStamp).toJson.asJsObject
+  }
+
+  class PimpedJsonObject(jsObj: JsObject) {
+    def mergeWith(other: JsObject): JsObject = {
+      new JsObject(jsObj.fields ++ other.fields)
+    }
+
+    def ++(other: JsObject): JsObject = jsObj mergeWith other
+  }
+
 }
 
 case class Response[T](error: List[String], result: Option[T])
