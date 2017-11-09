@@ -91,5 +91,14 @@ class KrakenPublicApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpe
       }
     }
 
+    "Return a correct order book response" in {
+      val probe = TestProbe()
+      probe.send(apiActor, GetOrderBook("ETH", "EUR"))
+      probe.expectMsgPF(timeout) {
+        case ct: OrderBookResponse => println(ct)
+        case a: MessageResponse => fail("wrong message: " + a)
+      }
+    }
+
   }
 }

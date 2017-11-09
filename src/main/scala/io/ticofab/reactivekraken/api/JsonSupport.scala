@@ -61,6 +61,18 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
   }
 
+  implicit val bookEntriesFormat = new JsonFormat[BookEntry] {
+    type BookEntryTuple = Tuple3[String, String, Long]
+
+    override def read(js: JsValue) = {
+      BookEntry.tupled(js.convertTo[BookEntryTuple])
+    }
+
+    override def write(obj: BookEntry) = BookEntry.unapply(obj).get.toJson
+  }
+
+  implicit val asksAndBidsFormat = jsonFormat2(AsksAndBids)
+
   implicit val ohlcRowFormat = new JsonFormat[OHLCRow] {
     type OHLCRowTuple = Tuple8[Long, String, String, String, String, String, String, Int]
 
