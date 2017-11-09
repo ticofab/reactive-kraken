@@ -69,16 +69,16 @@ class KrakenPublicApiActor(val nonceGenerator: () => Long) extends Actor with Re
       val path = "/0/public/OHLC"
       val params = Map("pair" -> (currency + respectToCurrency), "interval" -> interval.toString)
       val request = HttpRequest(uri = getUri(path, Some(params)))
-      handleRequest[OHLCData](request)
-        .map(extractMessage[OHLCData, OHLCResponse, OHLCData](_, OHLCResponse, _.result.get))
+      handleRequest[DataWithTime[OHLCRow]](request)
+        .map(extractMessage[DataWithTime[OHLCRow], OHLCResponse, DataWithTime[OHLCRow]](_, OHLCResponse, _.result.get))
         .pipeTo(sender)
 
     case GetOHLCSince(currency, respectToCurrency, timeStamp) =>
       val path = "/0/public/OHLC"
       val params = Map("pair" -> (currency + respectToCurrency), "since" -> timeStamp.toString)
       val request = HttpRequest(uri = getUri(path, Some(params)))
-      handleRequest[OHLCData](request)
-        .map(extractMessage[OHLCData, OHLCResponse, OHLCData](_, OHLCResponse, _.result.get))
+      handleRequest[DataWithTime[OHLCRow]](request)
+        .map(extractMessage[DataWithTime[OHLCRow], OHLCResponse, DataWithTime[OHLCRow]](_, OHLCResponse, _.result.get))
         .pipeTo(sender)
 
     case GetOrderBook(currency, respectToCurrency, count) =>
@@ -87,6 +87,14 @@ class KrakenPublicApiActor(val nonceGenerator: () => Long) extends Actor with Re
       val request = HttpRequest(uri = getUri(path, Some(params)))
       handleRequest[Map[String, AsksAndBids]](request)
         .map(extractMessage[Map[String, AsksAndBids], OrderBookResponse, Map[String, AsksAndBids]](_, OrderBookResponse, _.result.get))
+        .pipeTo(sender)
+
+    case GetRecentTrades(currency, respectToCurrency, timeStamp) =>
+      val path = "/0/public/Trades"
+      val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String,String]](Map())(c => Map("since" -> c.toString))
+      val request = HttpRequest(uri = getUri(path, Some(params)))
+      handleRequest[DataWithTime[RecentTradeRow]](request)
+        .map(extractMessage[DataWithTime[RecentTradeRow], RecentTradesResponse, DataWithTime[RecentTradeRow]](_, RecentTradesResponse, _.result.get))
         .pipeTo(sender)
   }
 
@@ -102,11 +110,13 @@ object KrakenPublicApiActor {
   case class GetOHLC(currency: String, respectToCurrency: String, interval: Int = 1) extends Message
   case class GetOHLCSince(currency: String, respectToCurrency: String, timeStamp: Long) extends Message
   case class GetOrderBook(currency: String, respectToCurrency: String, count: Option[Int] = None) extends Message
+  case class GetRecentTrades(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) extends Message
 
   case class CurrentServerTime(result: Either[List[String], ServerTime]) extends MessageResponse
   case class CurrentAssets(result: Either[List[String], Map[String, Asset]]) extends MessageResponse
   case class CurrentAssetPair(result: Either[List[String], Map[String, AssetPair]]) extends MessageResponse
   case class CurrentTicker(result: Either[List[String], Map[String, Ticker]]) extends MessageResponse
-  case class OHLCResponse(result: Either[List[String], OHLCData]) extends MessageResponse
+  case class OHLCResponse(result: Either[List[String], DataWithTime[OHLCRow]]) extends MessageResponse
   case class OrderBookResponse(result: Either[List[String], Map[String, AsksAndBids]]) extends MessageResponse
+  case class RecentTradesResponse(result: Either[List[String], DataWithTime[RecentTradeRow]]) extends MessageResponse
 }

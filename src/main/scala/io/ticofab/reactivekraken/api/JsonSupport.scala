@@ -16,7 +16,9 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model._
+import io.ticofab.reactivekraken.model.BuyOrSell.BuyOrSell
+import io.ticofab.reactivekraken.model.OrderType.OrderType
+import io.ticofab.reactivekraken.model.{OrderType, _}
 import spray.json._
 
 class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T#Value] {
@@ -48,7 +50,6 @@ trait JsonSupport extends DefaultJsonProtocol {
     "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
   implicit val openOrderFormat = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
-  implicit def httpResponseTFormat[T: JsonFormat]: RootJsonFormat[Response[T]] = jsonFormat2(Response.apply[T])
 
   implicit def tuple8Format[A :JsonFormat, B :JsonFormat, C :JsonFormat, D :JsonFormat, E :JsonFormat, F: JsonFormat, G: JsonFormat, H:JsonFormat] = {
     new RootJsonFormat[(A, B, C, D, E, F, G, H)] {
@@ -83,16 +84,29 @@ trait JsonSupport extends DefaultJsonProtocol {
     override def write(obj: OHLCRow) = OHLCRow.unapply(obj).get.toJson
   }
 
-  implicit val ohlcReader = new JsonFormat[OHLCData] {
+  implicit val recentTradeRowFormat = new JsonFormat[RecentTradeRow] {
+    type RecentTradeRowTuple = Tuple6[String, String, Double, String, String, String]
+
     override def read(js: JsValue) = {
-      val fields = js.asJsObject.fields
-      val id = fields("last").convertTo[Long]
-      val data = fields.filterKeys(_ != "last").map(kv => kv._1 -> kv._2.convertTo[Seq[OHLCRow]])
-      OHLCData(data,id)
+      RecentTradeRow.tupled(js.convertTo[RecentTradeRowTuple])
     }
 
-    override def write(obj: OHLCData) = obj.data.toJson.asJsObject ++ ("last" -> obj.timeStamp).toJson.asJsObject
+    override def write(obj: RecentTradeRow) = RecentTradeRow.unapply(obj).get.toJson
   }
+
+  implicit def odataWithTimeReader[T](implicit tFormat: JsonFormat[T]) = new JsonFormat[DataWithTime[T]] {
+    override def read(js: JsValue) = {
+      val fields = js.asJsObject.fields
+      val id = fields("last").toString().replace("\"","").toLong
+      val data = fields.filterKeys(_ != "last").mapValues(v => v.convertTo[Seq[T]])
+      DataWithTime(data,id)
+    }
+
+    override def write(obj: DataWithTime[T]) = obj.data.toJson.asJsObject ++ ("last" -> obj.timeStamp).toJson.asJsObject
+  }
+
+
+  implicit def httpResponseTFormat[T: JsonFormat]: RootJsonFormat[Response[T]] = jsonFormat2(Response.apply[T])
 
   class PimpedJsonObject(jsObj: JsObject) {
     def mergeWith(other: JsObject): JsObject = {
