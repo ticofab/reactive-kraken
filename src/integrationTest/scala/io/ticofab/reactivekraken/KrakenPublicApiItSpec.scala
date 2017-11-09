@@ -109,5 +109,14 @@ class KrakenPublicApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpe
       }
     }
 
+    "Return a correct recent spread response" in {
+      val probe = TestProbe()
+      probe.send(apiActor, GetRecentSpread("ETH", "EUR"))
+      probe.expectMsgPF(timeout) {
+        case ct: RecentSpreadResponse => println(ct)
+        case a: MessageResponse => fail("wrong message: " + a)
+      }
+    }
+
   }
 }

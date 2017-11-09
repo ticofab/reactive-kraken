@@ -94,7 +94,17 @@ trait JsonSupport extends DefaultJsonProtocol {
     override def write(obj: RecentTradeRow) = RecentTradeRow.unapply(obj).get.toJson
   }
 
-  implicit def odataWithTimeReader[T](implicit tFormat: JsonFormat[T]) = new JsonFormat[DataWithTime[T]] {
+  implicit val recentSpreadRowFormat = new JsonFormat[RecentSpreadRow] {
+    type RecentSpreadRowTuple = Tuple3[Long, String, String]
+
+    override def read(js: JsValue) = {
+      RecentSpreadRow.tupled(js.convertTo[RecentSpreadRowTuple])
+    }
+
+    override def write(obj: RecentSpreadRow) = RecentSpreadRow.unapply(obj).get.toJson
+  }
+
+  implicit def dataWithTimeReader[T](implicit tFormat: JsonFormat[T]) = new JsonFormat[DataWithTime[T]] {
     override def read(js: JsValue) = {
       val fields = js.asJsObject.fields
       val id = fields("last").toString().replace("\"","").toLong

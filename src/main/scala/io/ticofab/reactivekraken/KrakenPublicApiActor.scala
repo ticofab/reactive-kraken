@@ -96,6 +96,14 @@ class KrakenPublicApiActor(val nonceGenerator: () => Long) extends Actor with Re
       handleRequest[DataWithTime[RecentTradeRow]](request)
         .map(extractMessage[DataWithTime[RecentTradeRow], RecentTradesResponse, DataWithTime[RecentTradeRow]](_, RecentTradesResponse, _.result.get))
         .pipeTo(sender)
+
+    case GetRecentSpread(currency, respectToCurrency, timeStamp) =>
+      val path = "/0/public/Spread"
+      val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String,String]](Map())(c => Map("since" -> c.toString))
+      val request = HttpRequest(uri = getUri(path, Some(params)))
+      handleRequest[DataWithTime[RecentSpreadRow]](request)
+        .map(extractMessage[DataWithTime[RecentSpreadRow], RecentSpreadResponse, DataWithTime[RecentSpreadRow]](_, RecentSpreadResponse, _.result.get))
+        .pipeTo(sender)
   }
 
 }
@@ -111,6 +119,7 @@ object KrakenPublicApiActor {
   case class GetOHLCSince(currency: String, respectToCurrency: String, timeStamp: Long) extends Message
   case class GetOrderBook(currency: String, respectToCurrency: String, count: Option[Int] = None) extends Message
   case class GetRecentTrades(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) extends Message
+  case class GetRecentSpread(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) extends Message
 
   case class CurrentServerTime(result: Either[List[String], ServerTime]) extends MessageResponse
   case class CurrentAssets(result: Either[List[String], Map[String, Asset]]) extends MessageResponse
@@ -119,4 +128,5 @@ object KrakenPublicApiActor {
   case class OHLCResponse(result: Either[List[String], DataWithTime[OHLCRow]]) extends MessageResponse
   case class OrderBookResponse(result: Either[List[String], Map[String, AsksAndBids]]) extends MessageResponse
   case class RecentTradesResponse(result: Either[List[String], DataWithTime[RecentTradeRow]]) extends MessageResponse
+  case class RecentSpreadResponse(result: Either[List[String], DataWithTime[RecentSpreadRow]]) extends MessageResponse
 }

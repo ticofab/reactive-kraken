@@ -12,5 +12,5 @@ package object model {
 
   case class OHLCRow(time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
   case class RecentTradeRow(price: String, volume: String, time: Double, buyOrSell: String, orderType: String, miscellaneous: String)
-
+  case class RecentSpreadRow(time: Long, bid: String, ask: String)
 }
