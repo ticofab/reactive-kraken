@@ -16,8 +16,6 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model.BuyOrSell.BuyOrSell
-import io.ticofab.reactivekraken.model.OrderType.OrderType
 import io.ticofab.reactivekraken.model.{OrderType, _}
 import spray.json._
 

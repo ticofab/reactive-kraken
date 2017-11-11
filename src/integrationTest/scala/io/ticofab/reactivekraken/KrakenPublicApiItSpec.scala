@@ -73,18 +73,9 @@ class KrakenPublicApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpe
       }
     }
 
-    "Return a correct OHCL response with interval" in {
+    "Return a correct OHCL response" in {
       val probe = TestProbe()
       probe.send(apiActor, GetOHLC("ETH", "EUR"))
-      probe.expectMsgPF(timeout) {
-        case ct: OHLCResponse => println(ct)
-        case a: MessageResponse => fail("wrong message: " + a)
-      }
-    }
-
-    "Return a correct OHCL response with since" in {
-      val probe = TestProbe()
-      probe.send(apiActor, GetOHLCSince("ETH", "EUR", System.currentTimeMillis()/1000L - 60L))
       probe.expectMsgPF(timeout) {
         case ct: OHLCResponse => println(ct)
         case a: MessageResponse => fail("wrong message: " + a)

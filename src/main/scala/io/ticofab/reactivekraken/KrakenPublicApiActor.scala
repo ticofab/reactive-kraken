@@ -65,17 +65,9 @@ class KrakenPublicApiActor(val nonceGenerator: () => Long) extends Actor with Re
         .map(extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](_, CurrentTicker, _.result.get))
         .pipeTo(sender)
 
-    case GetOHLC(currency, respectToCurrency, interval) =>
+    case GetOHLC(currency, respectToCurrency, interval, timeStamp) =>
       val path = "/0/public/OHLC"
-      val params = Map("pair" -> (currency + respectToCurrency), "interval" -> interval.toString)
-      val request = HttpRequest(uri = getUri(path, Some(params)))
-      handleRequest[DataWithTime[OHLCRow]](request)
-        .map(extractMessage[DataWithTime[OHLCRow], OHLCResponse, DataWithTime[OHLCRow]](_, OHLCResponse, _.result.get))
-        .pipeTo(sender)
-
-    case GetOHLCSince(currency, respectToCurrency, timeStamp) =>
-      val path = "/0/public/OHLC"
-      val params = Map("pair" -> (currency + respectToCurrency), "since" -> timeStamp.toString)
+      val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String,String]](Map())(c => Map("since" -> c.toString))++ interval.fold[Map[String,String]](Map())(c => Map("interval" -> c.toString))
       val request = HttpRequest(uri = getUri(path, Some(params)))
       handleRequest[DataWithTime[OHLCRow]](request)
         .map(extractMessage[DataWithTime[OHLCRow], OHLCResponse, DataWithTime[OHLCRow]](_, OHLCResponse, _.result.get))
@@ -115,8 +107,7 @@ object KrakenPublicApiActor {
   case object GetCurrentAssets extends Message
   case class GetCurrentAssetPair(currency: String, respectToCurrency: String) extends Message
   case class GetCurrentTicker(currency: String, respectToCurrency: String) extends Message
-  case class GetOHLC(currency: String, respectToCurrency: String, interval: Int = 1) extends Message
-  case class GetOHLCSince(currency: String, respectToCurrency: String, timeStamp: Long) extends Message
+  case class GetOHLC(currency: String, respectToCurrency: String, interval: Option[Int] = None, timeStamp: Option[Long] = None) extends Message
   case class GetOrderBook(currency: String, respectToCurrency: String, count: Option[Int] = None) extends Message
   case class GetRecentTrades(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) extends Message
   case class GetRecentSpread(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) extends Message
