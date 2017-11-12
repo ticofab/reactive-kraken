@@ -26,28 +26,32 @@ class KrakenPrivateApiActor(val nonceGenerator: () => Long,
 
     case GetCurrentAccountBalance =>
       val path = "/0/private/Balance"
+      val nonce = nonceGenerator.apply
       val responseFunction = (request: HttpRequest) => handleRequest[Map[String, String]](request)
         .map(extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](_, CurrentAccountBalance, _.result.get))
-      getAuthenticatedAPIResponseMessage(credentials, path, responseFunction).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(credentials, path, nonce, responseFunction).pipeTo(sender)
 
     case GetCurrentTradeBalance(asset) =>
       val path = "/0/private/TradeBalance"
+      val nonce = nonceGenerator.apply
       val params = asset.flatMap(value => Some(Map("asset" -> value)))
       val responseFunction = (request: HttpRequest) => handleRequest[TradeBalance](request)
         .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
-      getAuthenticatedAPIResponseMessage(credentials, path, responseFunction, params).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(credentials, path, nonce, responseFunction, params).pipeTo(sender)
 
     case GetCurrentOpenOrders =>
       val path = "/0/private/OpenOrders"
+      val nonce = nonceGenerator.apply
       val responseFunction = (request: HttpRequest) => handleRequest[OpenOrder](request)
         .map(extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](_, CurrentOpenOrders, _.result.get.open.get))
-      getAuthenticatedAPIResponseMessage(credentials, path, responseFunction).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(credentials, path, nonce, responseFunction).pipeTo(sender)
 
     case GetCurrentClosedOrders =>
       val path = "/0/private/ClosedOrders"
+      val nonce = nonceGenerator.apply
       val responseFunction = (request: HttpRequest) => handleRequest[ClosedOrder](request)
         .map(extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](_, CurrentClosedOrders, _.result.get.closed.get))
-      getAuthenticatedAPIResponseMessage(credentials, path, responseFunction).pipeTo(sender)
+      getAuthenticatedAPIResponseMessage(credentials, path, nonce, responseFunction).pipeTo(sender)
   }
 
 }

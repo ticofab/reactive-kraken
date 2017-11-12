@@ -1,21 +1,20 @@
 package io.ticofab.reactivekraken.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
 import io.ticofab.reactivekraken.MessageResponse
 import io.ticofab.reactivekraken.signature.Signer
-import spray.json.JsonFormat
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait RequestHelper extends HttpRequestor with JsonSupport {
+
   import spray.json._
 
   protected implicit val actorSystem: ActorSystem
   protected implicit val executionContext: ExecutionContext
-  val nonceGenerator: () => Long
 
   /**
     *
@@ -43,8 +42,8 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
   private def getSignedRequest(path: String,
                                apiKey: String,
                                apiSecret: String,
+                               nonce: Long,
                                params: Option[Map[String, String]] = None) = {
-    val nonce = nonceGenerator.apply
     val postData = "nonce=" + nonce.toString
     val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
@@ -87,9 +86,10 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
 
   def getAuthenticatedAPIResponseMessage(credentials: (String, String),
                                          path: String,
+                                         nonce: Long,
                                          getResponse: HttpRequest => Future[MessageResponse],
                                          params: Option[Map[String, String]] = None): Future[MessageResponse] =
-    getResponse(getSignedRequest(path, credentials._1, credentials._2, params))
+    getResponse(getSignedRequest(path, credentials._1, credentials._2, nonce, params))
 
 
 }
