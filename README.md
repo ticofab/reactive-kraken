@@ -9,7 +9,7 @@ Available for Scala 2.11 and 2.12. In your build.sbt file,
 ```sbt
 resolvers += Resolver.jcenterRepo // you might not need this line
 
-libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.3.0"
+libraryDependencies += "io.ticofab" %% "reactive-kraken" % "0.4.0"
 ```
 
 ## Usage
@@ -31,25 +31,36 @@ See how the [KrakenApiActor](https://github.com/ticofab/reactive-kraken/blob/mas
 
 #### Actor based usage
 
-Instantiate a `KrakenApiActor` and talk to it. As per specs, you need to pass a nonce generator. If you need to query authenticated endpoint (such as the account balance), you need to pass your API key and API secret to the actor. 
+There are two actors you can use: one for the public APIs (`KrakenPublicApiActor`) and one for the private APIs (`KrakenPrivateApiActor`). The main difference is that the latter needs credentials for authentication. As per specs, you need to pass a nonce generator (both).
  
-Follows a table with the messages it can receive and the responses it will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
+Follows a table with the messages that these actors can process and the responses they will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
 
-| Message | Response | 
-| ------- | -------- |
-| `GetCurrentAssets` | `CurrentAssets` | 
-| `GetCurrentAssetPair("ETH", "EUR")` | `CurrentAssetPair` |
-| `GetCurrentTicker("ETH", "EUR")` | `CurrentTicker` |
-| `GetCurrentAccountBalance` | `CurrentAccountBalance` |
-| `GetCurrentTradeBalance` | `CurrentTradeBalance` |
-| `GetCurrentOpenOrders` | `CurrentOpenOrders` |
-| `GetCurrentClosedOrders` | `CurrentClosedOrders` |
+| Actor | Message | Response | 
+| ------| ------- | -------- |
+| Public | `GetCurrentAssets` | `CurrentAssets` | 
+| Public | `GetServerTime` | `CurrentServerTime` | 
+| Public | `GetOHLC` | `OHLCResponse` | 
+| Public | `GetOrderBook` | `OrderBookResponse` | 
+| Public | `GetRecentTrades` | `RecentTradesResponse` | 
+| Public | `GetRecentSpread` | `RecentSpreadResponse` | 
+| Public | `GetCurrentAssetPair("ETH", "EUR")` | `CurrentAssetPair` |
+| Public | `GetCurrentTicker("ETH", "EUR")` | `CurrentTicker` |
+| Private | `GetCurrentAccountBalance` | `CurrentAccountBalance` |
+| Private | `GetCurrentTradeBalance` | `CurrentTradeBalance` |
+| Private | `GetCurrentOpenOrders` | `CurrentOpenOrders` |
+| Private | `GetCurrentClosedOrders` | `CurrentClosedOrders` |
 
 Example:
 ```scala
 def nonceGenerator = () => System.currentTimeMillis
-val apiActor = system.actorOf(KrakenApiActor(nonceGenerator, Some(myApiKey), Some(myApiSecret)))
-(apiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
+
+// public api actor
+val publicApiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator))
+(publicApiActor ? GetCurrentAssets)(3.seconds).mapTo[CurrentAssets]
+
+// private api actor
+val privateApiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator, Some(myApiKey), Some(myApiSecret)))
+(privateApiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
 ```
 
 #### Stream based usage
