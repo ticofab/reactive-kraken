@@ -59,7 +59,7 @@ val publicApiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator))
 (publicApiActor ? GetCurrentAssets)(3.seconds).mapTo[CurrentAssets]
 
 // private api actor
-val privateApiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator, Some(myApiKey), Some(myApiSecret)))
+val privateApiActor = system.actorOf(KrakenPrivateApiActor(nonceGenerator, Some(myApiKey), Some(myApiSecret)))
 (privateApiActor ? GetCurrentAccountBalance)(3.seconds).mapTo[CurrentAccountBalance]
 ```
 
