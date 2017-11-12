@@ -35,7 +35,7 @@ class KrakenPublicApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")
 
   def nonceGenerator = () => System.currentTimeMillis
 
-  "A KrakenApiActor " should {
+  "A KrakenPublicApiActor " should {
 
     "Fire a request when asked to get assets" in {
 
@@ -63,7 +63,8 @@ class KrakenPublicApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")
     "Can used from multiple context" in {
       trait MockHttpRequestor extends HttpRequestor {
         override def fireRequest(request: HttpRequest) = Future({
-          Thread.sleep(1000); "mock"
+          Thread.sleep(1000);
+          "mock"
         })
       }
 
