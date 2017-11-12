@@ -18,24 +18,32 @@ package io.ticofab.reactivekraken
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestKit, TestProbe}
+import io.ticofab.reactivekraken.KrakenPublicApiActor._
 import io.ticofab.reactivekraken.api.JsonSupport
-import io.ticofab.reactivekraken.messages._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 import scala.util.Properties
 
-class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
+class KrakenPublicApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpec"))
   with WordSpecLike with Matchers with BeforeAndAfterAll with JsonSupport {
 
   val timeout = 10.seconds
 
   def nonceGenerator = () => System.currentTimeMillis
-  val apiKey = Properties.envOrNone("KRAKEN_API_KEY")
-  val apiSecret = Properties.envOrNone("KRAKEN_API_SECRET")
-  val apiActor = system.actorOf(KrakenApiActor(nonceGenerator, apiKey, apiSecret))
+  val apiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator))
 
   "The KrakenAPIActor" should {
+
+    "Return a correct ServerTime response" in {
+      val probe = TestProbe()
+      probe.send(apiActor, GetServerTime)
+      probe.expectMsgPF(timeout) {
+        case ca: CurrentServerTime => println(ca)
+        case a: MessageResponse => fail("wrong message: " + a)
+      }
+
+    }
 
     "Return a correct Asset response" in {
       val probe = TestProbe()
@@ -65,48 +73,38 @@ class KrakenApiIntegrationSpec extends TestKit(ActorSystem("KrakenApiIntegration
       }
     }
 
-    "Return the current account balance" in {
+    "Return a correct OHCL response" in {
       val probe = TestProbe()
-      probe.send(apiActor, GetCurrentAccountBalance)
+      probe.send(apiActor, GetOHLC("ETH", "EUR"))
       probe.expectMsgPF(timeout) {
-        case cab: CurrentAccountBalance => println(cab)
+        case ct: OHLCResponse => println(ct)
         case a: MessageResponse => fail("wrong message: " + a)
       }
     }
 
-    "Return the current trade balance" in {
+    "Return a correct order book response" in {
       val probe = TestProbe()
-      probe.send(apiActor, GetCurrentTradeBalance())
+      probe.send(apiActor, GetOrderBook("ETH", "EUR"))
       probe.expectMsgPF(timeout) {
-        case ctb: CurrentTradeBalance => println(ctb)
+        case ct: OrderBookResponse => println(ct)
         case a: MessageResponse => fail("wrong message: " + a)
       }
     }
 
-    "Return the current open orders" in {
+    "Return a correct recent trades response" in {
       val probe = TestProbe()
-      probe.send(apiActor, GetCurrentOpenOrders)
+      probe.send(apiActor, GetRecentTrades("ETH", "EUR"))
       probe.expectMsgPF(timeout) {
-        case coo: CurrentOpenOrders => println(coo)
+        case ct: RecentTradesResponse => println(ct)
         case a: MessageResponse => fail("wrong message: " + a)
       }
     }
 
-    "Return the current closed orders" in {
+    "Return a correct recent spread response" in {
       val probe = TestProbe()
-      probe.send(apiActor, GetCurrentClosedOrders)
+      probe.send(apiActor, GetRecentSpread("ETH", "EUR"))
       probe.expectMsgPF(timeout) {
-        case cco: CurrentClosedOrders => println(cco)
-        case a: MessageResponse => fail("wrong message: " + a)
-      }
-    }
-
-    "Return an error if asked to access a protected API without authentication" in {
-      val probe = TestProbe()
-      val unApiActor = system.actorOf(KrakenApiActor(nonceGenerator))
-      probe.send(unApiActor, GetCurrentAccountBalance)
-      probe.expectMsgPF(timeout) {
-        case kaae: KrakenApiActorError => println(kaae)
+        case ct: RecentSpreadResponse => println(ct)
         case a: MessageResponse => fail("wrong message: " + a)
       }
     }

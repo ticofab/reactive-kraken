@@ -20,7 +20,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
-import io.ticofab.reactivekraken.messages._
+import io.ticofab.reactivekraken.KrakenPublicApiActor._
 
 import scala.concurrent.duration._
 
@@ -31,14 +31,14 @@ object KrakenApiStream {
   def nonceGenerator = () => System.currentTimeMillis
 
   def assetPairStream(currency: String, respectToCurrencty: String) = {
-    val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))
+    val apiActor = as.actorOf(KrakenPublicApiActor(nonceGenerator))
     Source
       .tick(0.seconds, 2.second, GetCurrentAssetPair(currency, respectToCurrencty))
       .mapAsync(2) { gcap => (apiActor ? gcap) (2.second).mapTo[CurrentAssetPair] }
   }
 
   def tickerStream(currency: String, respectToCurrencty: String) = {
-    val apiActor = as.actorOf(KrakenApiActor(nonceGenerator))
+    val apiActor = as.actorOf(KrakenPublicApiActor(nonceGenerator))
     Source
       .tick(0.seconds, 2.second, GetCurrentTicker(currency, respectToCurrencty))
       .mapAsync(2) { gct => (apiActor ? gct) (2.second).mapTo[CurrentTicker] }
