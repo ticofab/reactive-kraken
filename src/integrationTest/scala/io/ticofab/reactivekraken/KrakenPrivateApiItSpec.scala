@@ -19,7 +19,7 @@ class KrakenPrivateApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSp
   val apiSecret = Properties.envOrNone("KRAKEN_API_SECRET")
   val apiActor = system.actorOf(KrakenPrivateApiActor(nonceGenerator, apiKey.get, apiSecret.get))
 
-  "The KrakenAPIActor" should {
+  "The KrakenPrivateApiActor" should {
 
     "Return the current account balance" in {
       val probe = TestProbe()

@@ -17,20 +17,20 @@
 
 name := """reactive-kraken"""
 
-version := "0.3.0"
+version := "0.4.0"
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 organization := "io.ticofab"
 
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
-crossScalaVersions := Seq("2.11.8", scalaVersion.value)
+crossScalaVersions := Seq("2.11.11", scalaVersion.value)
 
 libraryDependencies ++= {
 
-  val akkaVersion = "2.5.3"
-  val akkaHttpVersion = "10.0.9"
+  val akkaVersion = "2.5.6"
+  val akkaHttpVersion = "10.0.10"
 
   Seq(
 

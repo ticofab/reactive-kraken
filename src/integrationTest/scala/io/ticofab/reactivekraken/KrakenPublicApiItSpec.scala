@@ -33,7 +33,7 @@ class KrakenPublicApiItSpec extends TestKit(ActorSystem("KrakenApiIntegrationSpe
   def nonceGenerator = () => System.currentTimeMillis
   val apiActor = system.actorOf(KrakenPublicApiActor(nonceGenerator))
 
-  "The KrakenAPIActor" should {
+  "The KrakenPublicApiActor" should {
 
     "Return a correct ServerTime response" in {
       val probe = TestProbe()
