@@ -27,13 +27,13 @@ If you only need the logic to evaluate the signature, you can simply use
 ```scala
 val signature = Signer.getSignature(path, nonce, postData, apiSecret)
 ```
-See how the [KrakenApiActor](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/KrakenApiActor.scala) uses it.
+See how the [KrakenPrivateApiActor](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/KrakenPrivateApiActor.scala) uses it.
 
 #### Actor based usage
 
-There are two actors you can use: one for the public APIs (`KrakenPublicApiActor`) and one for the private APIs (`KrakenPrivateApiActor`). The main difference is that the latter needs credentials for authentication. As per specs, you need to pass a nonce generator (both).
+There are two actors you can use: the `KrakenPublicApiActor` talks to the public APIs, while the `KrakenPrivateApiActor` speaks the authenticated language of Kraken's private APIs, where sensible user data is exposed. The main difference between the two is that the private one needs credentials for authentication. As per specs, you need to pass both a nonce generator that emits always-increasing numeric values - see below.
  
-Follows a table with the messages that these actors can process and the responses they will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains `Either` a `Left` with a failure or a `Right` with the API response parsed to a case class.  
+Follows a table with the messages that these actors can process and the responses they will output, linked to the API endpoints as per listed here: https://www.kraken.com/help/api . Each response message contains an `Either`: a `Left` object in case of failure or `Right` with the API response parsed to a case class.  
 
 | Actor | Message | Response | 
 | ------| ------- | -------- |
@@ -65,7 +65,7 @@ val privateApiActor = system.actorOf(KrakenPrivateApiActor(nonceGenerator, Some(
 
 #### Stream based usage
 
-The stream approach uses `akka-stream` and it builds upon the `KrakenApiActor`. These streams will check every 2 seconds for data, but I plan to make it customisable. 
+The stream approach uses `akka-stream` and it builds upon the other actors. These streams will check every 2 seconds for data, but I plan to make it customisable. 
 
 You can obtain a number of streams via the `KrakenApiStream` object:
  
