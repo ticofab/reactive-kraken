@@ -26,9 +26,9 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class KrakenPublicApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")) with ImplicitSender
   with WordSpecLike with Matchers with MockitoSugar {
@@ -54,7 +54,7 @@ class KrakenPublicApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")
     }
 
     "Not respond upon receiving a message it doesn't understand" in {
-      val testActor = TestActorRef[KrakenPublicApiActor]
+      val testActor = system.actorOf(KrakenPublicApiActor(() => 42L))
       val probe = TestProbe()
       probe.send(testActor, "hello")
       probe.expectNoMsg(1.second)
@@ -62,7 +62,9 @@ class KrakenPublicApiActorSpec extends TestKit(ActorSystem("KrakenApiActorSpec")
 
     "Can used from multiple context" in {
       trait MockHttpRequestor extends HttpRequestor {
-        override def fireRequest(request: HttpRequest) = Future({Thread.sleep(1000); "mock"})
+        override def fireRequest(request: HttpRequest) = Future({
+          Thread.sleep(1000); "mock"
+        })
       }
 
       val apiActor: TestActorRef[KrakenPublicApiActor] = TestActorRef(Props(spy(new KrakenPublicApiActor(nonceGenerator) with MockHttpRequestor)))
