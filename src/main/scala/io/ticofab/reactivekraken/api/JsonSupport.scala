@@ -86,6 +86,31 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
   }
 
+  implicit val tradeFormat: RootJsonFormat[RecentTrade] = new RootJsonFormat[RecentTrade] {
+    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
+    override def write(o: RecentTrade) = JsArray(o.price.toJson, o.volume.toJson, o.time.toJson, o.buyOrSell.toJson, o.orderType.toJson, o.miscellaneous.toJson)
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(a, b, c, d, e, f)) =>
+        // case class RecentTrade(price: String, volume: String, time: Double, buyOrSell: String, orderType: String, miscellaneous: String)
+        RecentTrade(a.convertTo[String], b.convertTo[String], c.convertTo[Double], d.convertTo[String], e.convertTo[String], f.convertTo[String])
+      case x => deserializationError("Expected JsArray, but got " + x)
+    }
+  }
+
+  implicit val recentTradesFormat: RootJsonFormat[RecentTrades] = new RootJsonFormat[RecentTrades] {
+    override def write(obj: RecentTrades) = ??? // TODO
+
+    override def read(json: JsValue) = {
+      // NOTE: this is very brittle and strictly based on the Kraken API
+      val fields = json.asJsObject.fields
+      val rows = fields.filterKeys(_ != "last").toList.headOption.getOrElse(("a", JsArray(Vector())))._2.convertTo[List[RecentTrade]]
+      val last = fields.getOrElse("last", JsString("0")).convertTo[String].toLong
+      RecentTrades(rows, last)
+    }
+  }
+
+
   implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
   implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
   implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
@@ -105,16 +130,6 @@ trait JsonSupport extends DefaultJsonProtocol {
         case x => deserializationError("Expected Tuple8 as JsArray, but got " + x)
       }
     }
-  }
-
-  implicit val recentTradeRowFormat = new JsonFormat[RecentTradeRow] {
-    type RecentTradeRowTuple = Tuple6[String, String, Double, String, String, String]
-
-    override def read(js: JsValue) = {
-      RecentTradeRow.tupled(js.convertTo[RecentTradeRowTuple])
-    }
-
-    override def write(obj: RecentTradeRow) = RecentTradeRow.unapply(obj).get.toJson
   }
 
   implicit val recentSpreadRowFormat = new JsonFormat[RecentSpreadRow] {
