@@ -5,7 +5,7 @@ import io.ticofab.reactivekraken.model.{OHLC, OrderBook, RecentSpreads, RecentTr
 import org.scalatest.WordSpec
 
 /**
-  * Copyright 2017 Fabio Tiriticco, Fabway
+  * Copyright 2017-2019 Fabio Tiriticco, Fabway
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -96,13 +96,8 @@ class JsonSupportSpec extends WordSpec with JsonSupport {
           | }
         """.stripMargin
 
-      val parsed = jsonStr.parseJson
-      parsed.prettyPrint
-
-      val aaa = parsed.convertTo[OHLC]
-
-      succeed
-
+      val parsed = jsonStr.parseJson.convertTo[OHLC]
+      assert(parsed.ohlcRows.size == 6)
     }
 
     "Parse OrderBook correctly" in {
@@ -151,7 +146,6 @@ class JsonSupportSpec extends WordSpec with JsonSupport {
       val book = parsed.convertTo[OrderBook]
       assert(book.asks.size == 3)
       assert(book.bids.size == 2)
-      succeed
     }
 
     "Parse RecentTraes correctly" in {

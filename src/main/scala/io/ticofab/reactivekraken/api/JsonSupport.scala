@@ -1,7 +1,7 @@
 package io.ticofab.reactivekraken.api
 
 /**
-  * Copyright 2017 Fabio Tiriticco, Fabway
+  * Copyright 2017-2019 Fabio Tiriticco, Fabway
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
+import io.ticofab.reactivekraken.model.BuyOrSell.BuyOrSell
 import io.ticofab.reactivekraken.model.{OrderType, _}
 import spray.json._
 
@@ -39,9 +40,18 @@ trait JsonSupport extends DefaultJsonProtocol {
     "fee_volume_currency", "margin_call", "margin_stop")
   implicit val tickerFormat       = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
   implicit val tradeBalanceFormat = jsonFormat(TradeBalance, "eb", "tb", "m", "n", "c", "v", "e", "mf", "ml")
+  implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
+  implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
+  implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
+  implicit val descriptionFormat = jsonFormat(OrderDescription, "pair", "type", "ordertype", "price", "price2", "leverage", "order")
+  implicit val orderFormat       = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
+    "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
+  implicit val openOrderFormat   = jsonFormat(OpenOrder, "open")
+  implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
+
+
 
   implicit val ohlcRowFormat: RootJsonFormat[OHLCRow] = new RootJsonFormat[OHLCRow] {
-    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
     override def write(o: OHLCRow) = JsArray(o.time.toJson, o.open.toJson, o.high.toJson, o.low.toJson, o.close.toJson, o.vwap.toJson, o.volume.toJson, o.count.toJson)
 
     override def read(json: JsValue) = json match {
@@ -86,13 +96,11 @@ trait JsonSupport extends DefaultJsonProtocol {
   }
 
   implicit val tradeFormat: RootJsonFormat[RecentTrade] = new RootJsonFormat[RecentTrade] {
-    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
     override def write(o: RecentTrade) = JsArray(o.price.toJson, o.volume.toJson, o.time.toJson, o.buyOrSell.toJson, o.orderType.toJson, o.miscellaneous.toJson)
 
     override def read(json: JsValue) = json match {
       case JsArray(Vector(a, b, c, d, e, f)) =>
-        // case class RecentTrade(price: String, volume: String, time: Double, buyOrSell: String, orderType: String, miscellaneous: String)
-        RecentTrade(a.convertTo[String], b.convertTo[String], c.convertTo[Double], d.convertTo[String], e.convertTo[String], f.convertTo[String])
+        RecentTrade(a.convertTo[String], b.convertTo[String], c.convertTo[Double], d.convertTo[BuyOrSell], e.convertTo[String], f.convertTo[String])
       case x => deserializationError("Expected JsArray, but got " + x)
     }
   }
@@ -110,12 +118,10 @@ trait JsonSupport extends DefaultJsonProtocol {
   }
 
   implicit val spreadFormat: RootJsonFormat[RecentSpread] = new RootJsonFormat[RecentSpread] {
-    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
     override def write(o: RecentSpread) = JsArray(o.time.toJson, o.bid.toJson, o.ask.toJson)
 
     override def read(json: JsValue) = json match {
       case JsArray(Vector(a, b, c)) =>
-        // case class RecentTrade(price: String, volume: String, time: Double, buyOrSell: String, orderType: String, miscellaneous: String)
         RecentSpread(a.convertTo[Long], b.convertTo[String], c.convertTo[String])
       case x => deserializationError("Expected JsArray, but got " + x)
     }
@@ -132,17 +138,6 @@ trait JsonSupport extends DefaultJsonProtocol {
       RecentSpreads(rows, last)
     }
   }
-
-
-  implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
-  implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
-  implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
-  implicit val descriptionFormat = jsonFormat(OrderDescription, "pair", "type", "ordertype", "price", "price2", "leverage", "order")
-  implicit val orderFormat       = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
-    "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
-  implicit val openOrderFormat   = jsonFormat(OpenOrder, "open")
-  implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
-
 
   implicit def httpResponseTFormat[T: JsonFormat]: RootJsonFormat[Response[T]] = jsonFormat2(Response.apply[T])
 

@@ -1,7 +1,7 @@
 package io.ticofab.reactivekraken.model
 
 /**
-  * Copyright 2017 Fabio Tiriticco, Fabway
+  * Copyright 2017-2019 Fabio Tiriticco, Fabway
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ object OrderStatus extends Enumeration {
 
 object BuyOrSell extends Enumeration {
   type BuyOrSell = Value
-  val buy, sell = Value
+  val b, s = Value
 }
 
 object OrderType extends Enumeration {
