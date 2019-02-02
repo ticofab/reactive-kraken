@@ -21,13 +21,7 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @param params Optional request parameters
     * @return The correct Uri for this request
     */
-  def getUri(path: String, params: Option[Map[String, String]] = None): Uri = {
-    val basePath = "https://api.kraken.com"
-    params match {
-      case Some(value) => Uri(basePath + path).withQuery(Query(value))
-      case None => Uri(basePath + path)
-    }
-  }
+  def getUri(path: String, params: Map[String, String] = Map()): Uri = Uri("https://api.kraken.com" + path).withQuery(Query(params))
 
   /**
     * Creates the signed HTTP request to fire
@@ -42,7 +36,7 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
                        apiKey: String,
                        apiSecret: String,
                        nonce: Long,
-                       params: Option[Map[String, String]] = None) = {
+                       params: Map[String, String] = Map()) = {
     val postData = "nonce=" + nonce.toString
     val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))

@@ -16,20 +16,8 @@ package io.ticofab.reactivekraken.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model.BuyOrSell.BuyOrSell
-import io.ticofab.reactivekraken.model.{OrderType, _}
+import io.ticofab.reactivekraken.model._
 import spray.json._
-
-class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T#Value] {
-  override def write(obj: T#Value): JsValue = JsString(obj.toString)
-
-  override def read(json: JsValue): T#Value = {
-    json match {
-      case JsString(txt) => enu.withName(txt)
-      case somethingElse => throw DeserializationException(s"Expected a value from enum $enu instead of $somethingElse")
-    }
-  }
-}
 
 trait JsonSupport extends DefaultJsonProtocol {
 
@@ -40,16 +28,12 @@ trait JsonSupport extends DefaultJsonProtocol {
     "fee_volume_currency", "margin_call", "margin_stop")
   implicit val tickerFormat       = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
   implicit val tradeBalanceFormat = jsonFormat(TradeBalance, "eb", "tb", "m", "n", "c", "v", "e", "mf", "ml")
-  implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
-  implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
-  implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
+
   implicit val descriptionFormat = jsonFormat(OrderDescription, "pair", "type", "ordertype", "price", "price2", "leverage", "order")
   implicit val orderFormat       = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
     "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
   implicit val openOrderFormat   = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
-
-
 
   implicit val ohlcRowFormat: RootJsonFormat[OHLCRow] = new RootJsonFormat[OHLCRow] {
     override def write(o: OHLCRow) = JsArray(o.time.toJson, o.open.toJson, o.high.toJson, o.low.toJson, o.close.toJson, o.vwap.toJson, o.volume.toJson, o.count.toJson)
@@ -100,7 +84,7 @@ trait JsonSupport extends DefaultJsonProtocol {
 
     override def read(json: JsValue) = json match {
       case JsArray(Vector(a, b, c, d, e, f)) =>
-        RecentTrade(a.convertTo[String], b.convertTo[String], c.convertTo[Double], d.convertTo[BuyOrSell], e.convertTo[String], f.convertTo[String])
+        RecentTrade(a.convertTo[String], b.convertTo[String], c.convertTo[Double], d.convertTo[String], e.convertTo[String], f.convertTo[String])
       case x => deserializationError("Expected JsArray, but got " + x)
     }
   }

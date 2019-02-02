@@ -29,7 +29,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getCurrentAssetPair(currency: String, respectToCurrency: String) = {
     val path = "/0/public/AssetPairs"
     val params = Map("pair" -> (currency + respectToCurrency))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[Map[String, AssetPair]](request)
       .map(extractMessage[Map[String, AssetPair], CurrentAssetPair, Map[String, AssetPair]](_, CurrentAssetPair, _.result.get))
   }
@@ -37,7 +37,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getCurrentTicker(currency: String, respectToCurrency: String) = {
     val path = "/0/public/Ticker"
     val params = Map("pair" -> (currency + respectToCurrency))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[Map[String, Ticker]](request)
       .map(extractMessage[Map[String, Ticker], CurrentTicker, Map[String, Ticker]](_, CurrentTicker, _.result.get))
   }
@@ -45,7 +45,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getOHLC(currency: String, respectToCurrency: String, interval: Option[Int] = None, timeStamp: Option[Long] = None) = {
     val path = "/0/public/OHLC"
     val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String, String]](Map())(c => Map("since" -> c.toString)) ++ interval.fold[Map[String, String]](Map())(c => Map("interval" -> c.toString))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[OHLC](request)
       .map(extractMessage[OHLC, OHLCResponse, OHLC](_, OHLCResponse, _.result.get))
   }
@@ -53,7 +53,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getOrderBook(currency: String, respectToCurrency: String, count: Option[Int] = None) = {
     val path = "/0/public/Depth"
     val params = Map("pair" -> (currency + respectToCurrency)) ++ count.fold[Map[String, String]](Map())(c => Map("count" -> c.toString))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[OrderBook](request)
       .map(extractMessage[OrderBook, OrderBookResponse, OrderBook](_, OrderBookResponse, _.result.get))
   }
@@ -61,7 +61,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getRecentTrades(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) = {
     val path = "/0/public/Trades"
     val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String, String]](Map())(c => Map("since" -> c.toString))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[RecentTrades](request)
       .map(extractMessage[RecentTrades, RecentTradesResponse, RecentTrades](_, RecentTradesResponse, _.result.get))
   }
@@ -69,7 +69,7 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
   def getRecentSpread(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) = {
     val path = "/0/public/Spread"
     val params = Map("pair" -> (currency + respectToCurrency)) ++ timeStamp.fold[Map[String, String]](Map())(c => Map("since" -> c.toString))
-    val request = HttpRequest(uri = getUri(path, Some(params)))
+    val request = HttpRequest(uri = getUri(path, params))
     handleRequest[RecentSpreads](request)
       .map(extractMessage[RecentSpreads, RecentSpreadResponse, RecentSpreads](_, RecentSpreadResponse, _.result.get))
   }

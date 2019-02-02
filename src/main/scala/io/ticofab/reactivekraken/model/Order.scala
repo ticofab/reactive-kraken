@@ -16,37 +16,17 @@ package io.ticofab.reactivekraken.model
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.model.BuyOrSell.BuyOrSell
-import io.ticofab.reactivekraken.model.OrderStatus.OrderStatus
-import io.ticofab.reactivekraken.model.OrderType.OrderType
-
-object OrderStatus extends Enumeration {
-  type OrderStatus = Value
-  val pending, open, closed, canceled, expired = Value
-}
-
-object BuyOrSell extends Enumeration {
-  type BuyOrSell = Value
-  val b, s = Value
-}
-
-object OrderType extends Enumeration {
-  type OrderType = Value
-  val market, limit, stop_loss, take_profit, stop_loss_profit, stop_loss_profit_limit, stop_loss_limit,
-  take_profit_limit, trailing_stop, trailing_stop_limit, stop_loss_and_limit, settle_position = Value
-}
-
 case class OrderDescription(pair: String,
-                            buyOrSell: BuyOrSell,
-                            orderType: OrderType,
+                            buyOrSell: String,
+                            orderType: String,
                             price: String,
                             price2: String,
                             leverage: String,
                             order: String)
 
 case class Order(referralTransactionId: Option[String],
-                 userReferenceId: Option[String],
-                 status: OrderStatus,
+                 userReferenceId: Option[Int],
+                 status: String,
                  timestamp: Double,
                  startTime: Double,
                  expireTime: Double,

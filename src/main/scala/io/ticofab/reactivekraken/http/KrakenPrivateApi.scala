@@ -26,10 +26,10 @@ class KrakenPrivateApi(apiKey: String,
     getResponse(signedRequest)
   }
 
-  def getCurrentTradeBalance(asset: Option[String]): Future[CurrentTradeBalance] = {
+  def getCurrentTradeBalance(asset: Option[String] = None): Future[CurrentTradeBalance] = {
     val path = "/0/private/TradeBalance"
     val nonce = nonceGenerator.apply
-    val params = asset.flatMap(value => Some(Map("asset" -> value)))
+    val params = asset.fold(Map[String, String]())(asset => Map("asset" -> asset))
     val getResponse = (request: HttpRequest) => handleRequest[TradeBalance](request)
       .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
     val signedRequest = getSignedRequest(path, apiKey, apiSecret, nonce, params)
