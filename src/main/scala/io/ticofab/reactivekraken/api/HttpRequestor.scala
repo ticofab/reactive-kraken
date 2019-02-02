@@ -27,11 +27,12 @@ import scala.concurrent.duration._
 
 trait HttpRequestor {
 
-  protected implicit val actorSystem: ActorSystem
-  protected implicit val materializer: ActorMaterializer
+  protected implicit val as: ActorSystem
+  protected implicit val am: ActorMaterializer
 
   def fireRequest(request: HttpRequest): Future[String] =
-    Http().singleRequest(request)
+    Http()
+      .singleRequest(request)
       .flatMap(_.entity.toStrict(2.second))
       .map(_.data)
       .map(_.utf8String)

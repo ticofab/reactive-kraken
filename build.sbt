@@ -19,7 +19,7 @@ name := """reactive-kraken"""
 
 version := "0.4.0"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.8"
 
 organization := "io.ticofab"
 
@@ -29,8 +29,8 @@ crossScalaVersions := Seq("2.11.11", scalaVersion.value)
 
 libraryDependencies ++= {
 
-  val akkaVersion = "2.5.6"
-  val akkaHttpVersion = "10.0.10"
+  val akkaVersion = "2.5.20"
+  val akkaHttpVersion = "10.1.7"
 
   Seq(
 
@@ -40,27 +40,18 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
 
     // json parsing stuff
-    "io.spray" %% "spray-json" % "1.3.3",
+    "io.spray" %% "spray-json" % "1.3.5",
 
     // for de/encoding in Base64
-    "commons-codec" % "commons-codec" % "1.10",
+    "commons-codec" % "commons-codec" % "1.11",
 
     // ---- test
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test, it",
-    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test, it",
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test, it",
-    "org.mockito" % "mockito-core" % "2.8.47" % "test, it"
+//    "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test
 
   )
 
 }
-
-lazy val root = Project(id = "reactive-kraken", base = file("."))
-  .configs(IntegrationTest)
-  .settings(Defaults.itSettings: _*)
-  .settings(
-    sourceDirectory in IntegrationTest := baseDirectory.value / "src/integrationTest",
-    parallelExecution in IntegrationTest := false
-  )
 
 bintrayPackageLabels := Seq("scala", "akka", "kraken", "reactive")

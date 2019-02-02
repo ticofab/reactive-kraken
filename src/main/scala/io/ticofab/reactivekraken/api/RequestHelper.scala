@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
-import io.ticofab.reactivekraken.MessageResponse
 import io.ticofab.reactivekraken.signature.Signer
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -13,8 +12,8 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
 
   import spray.json._
 
-  protected implicit val actorSystem: ActorSystem
-  protected implicit val executionContext: ExecutionContext
+  protected implicit val as: ActorSystem
+  protected implicit val ec: ExecutionContext
 
   /**
     *
@@ -39,11 +38,11 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @param apiSecret The user's API secret
     * @return The appropriate HTTP request to fire.
     */
-  private def getSignedRequest(path: String,
-                               apiKey: String,
-                               apiSecret: String,
-                               nonce: Long,
-                               params: Option[Map[String, String]] = None) = {
+  def getSignedRequest(path: String,
+                       apiKey: String,
+                       apiSecret: String,
+                       nonce: Long,
+                       params: Option[Map[String, String]] = None) = {
     val postData = "nonce=" + nonce.toString
     val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
@@ -82,14 +81,5 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     else if (resp.result.isDefined) messageFactory(Right(contentFactory(resp)))
     else messageFactory(Left(List("Something went wrong: response has no content.")))
   }
-
-
-  def getAuthenticatedAPIResponseMessage(credentials: (String, String),
-                                         path: String,
-                                         nonce: Long,
-                                         getResponse: HttpRequest => Future[MessageResponse],
-                                         params: Option[Map[String, String]] = None): Future[MessageResponse] =
-    getResponse(getSignedRequest(path, credentials._1, credentials._2, nonce, params))
-
 
 }
