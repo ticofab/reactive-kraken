@@ -31,7 +31,6 @@ class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T
 }
 
 trait JsonSupport extends DefaultJsonProtocol {
-  implicit def pimpedJsonObject(jsObj: JsObject) = new PimpedJsonObject(jsObj)
 
   implicit val timeFormat         = jsonFormat(ServerTime, "unixtime", "rfc1123")
   implicit val assetFormat        = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
@@ -110,6 +109,30 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
   }
 
+  implicit val spreadFormat: RootJsonFormat[RecentSpread] = new RootJsonFormat[RecentSpread] {
+    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
+    override def write(o: RecentSpread) = JsArray(o.time.toJson, o.bid.toJson, o.ask.toJson)
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(a, b, c)) =>
+        // case class RecentTrade(price: String, volume: String, time: Double, buyOrSell: String, orderType: String, miscellaneous: String)
+        RecentSpread(a.convertTo[Long], b.convertTo[String], c.convertTo[String])
+      case x => deserializationError("Expected JsArray, but got " + x)
+    }
+  }
+
+  implicit val recentSpreadsFormat: RootJsonFormat[RecentSpreads] = new RootJsonFormat[RecentSpreads] {
+    override def write(obj: RecentSpreads) = ??? // TODO
+
+    override def read(json: JsValue) = {
+      // NOTE: this is very brittle and strictly based on the Kraken API
+      val fields = json.asJsObject.fields
+      val rows = fields.filterKeys(_ != "last").toList.headOption.getOrElse(("a", JsArray(Vector())))._2.convertTo[List[RecentSpread]]
+      val last = fields.getOrElse("last", JsNumber(0)).convertTo[Long]
+      RecentSpreads(rows, last)
+    }
+  }
+
 
   implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
   implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
@@ -120,49 +143,8 @@ trait JsonSupport extends DefaultJsonProtocol {
   implicit val openOrderFormat   = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
 
-  implicit def tuple8Format[A: JsonFormat, B: JsonFormat, C: JsonFormat, D: JsonFormat, E: JsonFormat, F: JsonFormat, G: JsonFormat, H: JsonFormat] = {
-    new RootJsonFormat[(A, B, C, D, E, F, G, H)] {
-      def write(t: (A, B, C, D, E, F, G, H)) = JsArray(t._1.toJson, t._2.toJson, t._3.toJson, t._4.toJson, t._5.toJson, t._6.toJson, t._7.toJson, t._8.toJson)
-
-      def read(value: JsValue) = value match {
-        case JsArray(Seq(a, b, c, d, e, f, g, h)) =>
-          (a.convertTo[A], b.convertTo[B], c.convertTo[C], d.convertTo[D], e.convertTo[E], f.convertTo[F], g.convertTo[G], h.convertTo[H])
-        case x => deserializationError("Expected Tuple8 as JsArray, but got " + x)
-      }
-    }
-  }
-
-  implicit val recentSpreadRowFormat = new JsonFormat[RecentSpreadRow] {
-    type RecentSpreadRowTuple = Tuple3[Long, String, String]
-
-    override def read(js: JsValue) = {
-      RecentSpreadRow.tupled(js.convertTo[RecentSpreadRowTuple])
-    }
-
-    override def write(obj: RecentSpreadRow) = RecentSpreadRow.unapply(obj).get.toJson
-  }
-
-  implicit def dataWithTimeReader[T](implicit tFormat: JsonFormat[T]) = new JsonFormat[DataWithTime[T]] {
-    override def read(js: JsValue) = {
-      val fields = js.asJsObject.fields
-      val id = fields("last").toString().replace("\"", "").toLong
-      val data = fields.filterKeys(_ != "last").mapValues(v => v.convertTo[Seq[T]])
-      DataWithTime(data, id)
-    }
-
-    override def write(obj: DataWithTime[T]) = obj.data.toJson.asJsObject ++ ("last" -> obj.timeStamp).toJson.asJsObject
-  }
-
 
   implicit def httpResponseTFormat[T: JsonFormat]: RootJsonFormat[Response[T]] = jsonFormat2(Response.apply[T])
-
-  class PimpedJsonObject(jsObj: JsObject) {
-    def mergeWith(other: JsObject): JsObject = {
-      new JsObject(jsObj.fields ++ other.fields)
-    }
-
-    def ++(other: JsObject): JsObject = jsObj mergeWith other
-  }
 
 }
 

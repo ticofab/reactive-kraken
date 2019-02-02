@@ -1,7 +1,7 @@
 package io.ticofab.reactivekraken
 
 import io.ticofab.reactivekraken.api.JsonSupport
-import io.ticofab.reactivekraken.model.{OHLC, OrderBook, RecentTrades}
+import io.ticofab.reactivekraken.model.{OHLC, OrderBook, RecentSpreads, RecentTrades}
 import org.scalatest.WordSpec
 
 /**
@@ -19,6 +19,7 @@ import org.scalatest.WordSpec
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
+
 import spray.json._
 
 class JsonSupportSpec extends WordSpec with JsonSupport {
@@ -198,6 +199,40 @@ class JsonSupportSpec extends WordSpec with JsonSupport {
       val parsed = jsonStr.parseJson
       val trades = parsed.convertTo[RecentTrades]
       assert(trades.trades.size == 4)
+    }
+
+    "Parse RecentSpreads correctly" in {
+      val jsonStr =
+        """
+          |{
+          |    "XETHZEUR": [
+          |      [
+          |        1549133893,
+          |        "93.14000",
+          |        "93.22000"
+          |      ],
+          |      [
+          |        1549133895,
+          |        "93.14000",
+          |        "93.20000"
+          |      ],
+          |      [
+          |        1549133899,
+          |        "93.14000",
+          |        "93.23000"
+          |      ],
+          |      [
+          |        1549135335,
+          |        "93.23000",
+          |        "93.25000"
+          |      ]
+          |    ],
+          |    "last": 1549135335
+          |  }
+          |
+        """.stripMargin
+      val spreads = jsonStr.parseJson.convertTo[RecentSpreads]
+      assert(spreads.spreads.size == 4)
     }
   }
 
