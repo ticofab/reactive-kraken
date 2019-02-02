@@ -22,7 +22,7 @@ import org.scalatest.WordSpec
 import spray.json._
 
 class KrakenPublicApiSpec extends WordSpec with JsonSupport {
-  
+
   "test" should {
     "parse Json" in {
 
