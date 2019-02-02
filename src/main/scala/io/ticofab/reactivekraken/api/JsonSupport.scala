@@ -33,25 +33,50 @@ class EnumJsonConverter[T <: scala.Enumeration](enu: T) extends RootJsonFormat[T
 trait JsonSupport extends DefaultJsonProtocol {
   implicit def pimpedJsonObject(jsObj: JsObject) = new PimpedJsonObject(jsObj)
 
-  implicit val timeFormat = jsonFormat(ServerTime, "unixtime", "rfc1123")
-  implicit val assetFormat = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
-  implicit val assetPairFormat = jsonFormat(AssetPair, "altname", "aclass_base", "base", "aclass_quote", "quote", "lot",
+  implicit val timeFormat         = jsonFormat(ServerTime, "unixtime", "rfc1123")
+  implicit val assetFormat        = jsonFormat(Asset, "aclass", "altname", "decimals", "display_decimals")
+  implicit val assetPairFormat    = jsonFormat(AssetPair, "altname", "aclass_base", "base", "aclass_quote", "quote", "lot",
     "pair_decimals", "lot_decimals", "lot_multiplier", "leverage_buy", "leverage_sell", "fees", "fees_maker",
     "fee_volume_currency", "margin_call", "margin_stop")
-  implicit val tickerFormat = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
+  implicit val tickerFormat       = jsonFormat(Ticker, "a", "b", "c", "v", "p", "t", "l", "h", "o")
   implicit val tradeBalanceFormat = jsonFormat(TradeBalance, "eb", "tb", "m", "n", "c", "v", "e", "mf", "ml")
-  implicit val orderTypeFormat = new EnumJsonConverter(OrderType)
-  implicit val buyOrSellFormat = new EnumJsonConverter(BuyOrSell)
+
+  implicit val ohlcRowFormat: RootJsonFormat[OHLCRow] = new RootJsonFormat[OHLCRow] {
+    // (time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
+    override def write(o: OHLCRow) = JsArray(o.time.toJson, o.open.toJson, o.high.toJson, o.low.toJson, o.close.toJson, o.vwap.toJson, o.volume.toJson, o.count.toJson)
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(a, b, c, d, e, f, g, h)) =>
+        OHLCRow(a.convertTo[Long], b.convertTo[String], c.convertTo[String], d.convertTo[String], e.convertTo[String], f.convertTo[String], g.convertTo[String], h.convertTo[Int])
+      case x => deserializationError("Expected JsArray, but got " + x)
+    }
+  }
+
+  implicit val ohlcFormat: RootJsonFormat[OHLC] = new RootJsonFormat[OHLC] {
+    override def write(obj: OHLC) = ??? // TODO
+
+    override def read(json: JsValue) = {
+      // NOTE: this is very brittle and strictly based on the Kraken API
+      val fields = json.asJsObject.fields
+      val rows = fields.filterKeys(_ != "last").toList.headOption.getOrElse(("a", JsArray(Vector())))._2.convertTo[List[OHLCRow]]
+      val last = fields.getOrElse("last", JsNumber(0)).convertTo[Long]
+      OHLC(rows, last)
+    }
+  }
+
+  implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
+  implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
   implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
   implicit val descriptionFormat = jsonFormat(OrderDescription, "pair", "type", "ordertype", "price", "price2", "leverage", "order")
-  implicit val orderFormat = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
+  implicit val orderFormat       = jsonFormat(Order, "refid", "userref", "status", "opentm", "starttm", "expiretm", "descr",
     "vol", "vol_exec", "cost", "fee", "price", "misc", "stopprice", "limitprice", "oflags", "trades")
-  implicit val openOrderFormat = jsonFormat(OpenOrder, "open")
+  implicit val openOrderFormat   = jsonFormat(OpenOrder, "open")
   implicit val closedOrderFormat = jsonFormat(ClosedOrder, "closed")
 
-  implicit def tuple8Format[A :JsonFormat, B :JsonFormat, C :JsonFormat, D :JsonFormat, E :JsonFormat, F: JsonFormat, G: JsonFormat, H:JsonFormat] = {
+  implicit def tuple8Format[A: JsonFormat, B: JsonFormat, C: JsonFormat, D: JsonFormat, E: JsonFormat, F: JsonFormat, G: JsonFormat, H: JsonFormat] = {
     new RootJsonFormat[(A, B, C, D, E, F, G, H)] {
       def write(t: (A, B, C, D, E, F, G, H)) = JsArray(t._1.toJson, t._2.toJson, t._3.toJson, t._4.toJson, t._5.toJson, t._6.toJson, t._7.toJson, t._8.toJson)
+
       def read(value: JsValue) = value match {
         case JsArray(Seq(a, b, c, d, e, f, g, h)) =>
           (a.convertTo[A], b.convertTo[B], c.convertTo[C], d.convertTo[D], e.convertTo[E], f.convertTo[F], g.convertTo[G], h.convertTo[H])
@@ -71,16 +96,6 @@ trait JsonSupport extends DefaultJsonProtocol {
   }
 
   implicit val asksAndBidsFormat = jsonFormat2(AsksAndBids)
-
-  implicit val ohlcRowFormat = new JsonFormat[OHLCRow] {
-    type OHLCRowTuple = Tuple8[Long, String, String, String, String, String, String, Int]
-
-    override def read(js: JsValue) = {
-      OHLCRow.tupled(js.convertTo[OHLCRowTuple])
-    }
-
-    override def write(obj: OHLCRow) = OHLCRow.unapply(obj).get.toJson
-  }
 
   implicit val recentTradeRowFormat = new JsonFormat[RecentTradeRow] {
     type RecentTradeRowTuple = Tuple6[String, String, Double, String, String, String]
@@ -105,9 +120,9 @@ trait JsonSupport extends DefaultJsonProtocol {
   implicit def dataWithTimeReader[T](implicit tFormat: JsonFormat[T]) = new JsonFormat[DataWithTime[T]] {
     override def read(js: JsValue) = {
       val fields = js.asJsObject.fields
-      val id = fields("last").toString().replace("\"","").toLong
+      val id = fields("last").toString().replace("\"", "").toLong
       val data = fields.filterKeys(_ != "last").mapValues(v => v.convertTo[Seq[T]])
-      DataWithTime(data,id)
+      DataWithTime(data, id)
     }
 
     override def write(obj: DataWithTime[T]) = obj.data.toJson.asJsObject ++ ("last" -> obj.timeStamp).toJson.asJsObject
