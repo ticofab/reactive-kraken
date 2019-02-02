@@ -54,8 +54,8 @@ class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken"))
     val path = "/0/public/Depth"
     val params = Map("pair" -> (currency + respectToCurrency)) ++ count.fold[Map[String, String]](Map())(c => Map("count" -> c.toString))
     val request = HttpRequest(uri = getUri(path, Some(params)))
-    handleRequest[Map[String, AsksAndBids]](request)
-      .map(extractMessage[Map[String, AsksAndBids], OrderBookResponse, Map[String, AsksAndBids]](_, OrderBookResponse, _.result.get))
+    handleRequest[OrderBook](request)
+      .map(extractMessage[OrderBook, OrderBookResponse, OrderBook](_, OrderBookResponse, _.result.get))
   }
 
   def getRecentTrades(currency: String, respectToCurrency: String, timeStamp: Option[Long] = None) = {
@@ -85,7 +85,7 @@ case class CurrentTicker(result: Either[List[String], Map[String, Ticker]])
 
 case class OHLCResponse(result: Either[List[String], OHLC])
 
-case class OrderBookResponse(result: Either[List[String], Map[String, AsksAndBids]])
+case class OrderBookResponse(result: Either[List[String], OrderBook])
 
 case class RecentTradesResponse(result: Either[List[String], DataWithTime[RecentTradeRow]])
 

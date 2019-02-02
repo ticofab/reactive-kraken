@@ -64,6 +64,28 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
   }
 
+  implicit val bookEntryFormat: RootJsonFormat[BookEntry] = new RootJsonFormat[BookEntry] {
+    override def write(obj: BookEntry) = ???
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(a, b, c)) =>
+        BookEntry(a.convertTo[String], b.convertTo[String], c.convertTo[Long])
+      case x => deserializationError("Expected JsArray, but got " + x)
+    }
+  }
+
+  implicit val orderBookFormat: RootJsonFormat[OrderBook] = new RootJsonFormat[OrderBook] {
+    override def write(obj: OrderBook) = ???
+
+    override def read(json: JsValue) = {
+      // NOTE: this is very brittle and strictly based on the Kraken API
+      val base = json.asJsObject.fields.toList.headOption.getOrElse(("a", JsArray(Vector())))._2.asJsObject.fields
+      val asks = base.getOrElse("asks", JsArray(Vector())).convertTo[List[BookEntry]]
+      val bids = base.getOrElse("bids", JsArray(Vector())).convertTo[List[BookEntry]]
+      OrderBook(asks, bids)
+    }
+  }
+
   implicit val orderTypeFormat   = new EnumJsonConverter(OrderType)
   implicit val buyOrSellFormat   = new EnumJsonConverter(BuyOrSell)
   implicit val orderStatusFormat = new EnumJsonConverter(OrderStatus)
@@ -84,18 +106,6 @@ trait JsonSupport extends DefaultJsonProtocol {
       }
     }
   }
-
-  implicit val bookEntriesFormat = new JsonFormat[BookEntry] {
-    type BookEntryTuple = Tuple3[String, String, Long]
-
-    override def read(js: JsValue) = {
-      BookEntry.tupled(js.convertTo[BookEntryTuple])
-    }
-
-    override def write(obj: BookEntry) = BookEntry.unapply(obj).get.toJson
-  }
-
-  implicit val asksAndBidsFormat = jsonFormat2(AsksAndBids)
 
   implicit val recentTradeRowFormat = new JsonFormat[RecentTradeRow] {
     type RecentTradeRowTuple = Tuple6[String, String, Double, String, String, String]
