@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.model
+package io.ticofab.reactivekraken.v0.model
 
 case class BookEntry(price: String, volume: String, timestamp: Long)
 

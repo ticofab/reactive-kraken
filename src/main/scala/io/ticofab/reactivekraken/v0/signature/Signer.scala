@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.signature
+package io.ticofab.reactivekraken.v0.signature
 
 import java.security.MessageDigest
 import javax.crypto.Mac

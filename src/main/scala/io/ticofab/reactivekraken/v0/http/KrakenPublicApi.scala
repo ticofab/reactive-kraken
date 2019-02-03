@@ -1,10 +1,10 @@
-package io.ticofab.reactivekraken.http
+package io.ticofab.reactivekraken.v0.http
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.ActorMaterializer
-import io.ticofab.reactivekraken.api.RequestHelper
-import io.ticofab.reactivekraken.model._
+import io.ticofab.reactivekraken.v0.api.RequestHelper
+import io.ticofab.reactivekraken.v0.model._
 
 class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken")) extends RequestHelper {
 

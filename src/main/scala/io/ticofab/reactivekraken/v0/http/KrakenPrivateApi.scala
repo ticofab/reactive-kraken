@@ -1,10 +1,10 @@
-package io.ticofab.reactivekraken.http
+package io.ticofab.reactivekraken.v0.http
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.ActorMaterializer
-import io.ticofab.reactivekraken.api.RequestHelper
-import io.ticofab.reactivekraken.model.{ClosedOrder, OpenOrder, Order, TradeBalance}
+import io.ticofab.reactivekraken.v0.api.RequestHelper
+import io.ticofab.reactivekraken.v0.model.{ClosedOrder, OpenOrder, Order, TradeBalance}
 
 import scala.concurrent.Future
 

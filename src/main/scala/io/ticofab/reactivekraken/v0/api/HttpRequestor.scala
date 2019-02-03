@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.api
+package io.ticofab.reactivekraken.v0.api
 
 /**
   * Copyright 2017-2019 Fabio Tiriticco, Fabway

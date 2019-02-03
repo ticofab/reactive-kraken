@@ -1,10 +1,10 @@
-package io.ticofab.reactivekraken.api
+package io.ticofab.reactivekraken.v0.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
-import io.ticofab.reactivekraken.signature.Signer
+import io.ticofab.reactivekraken.v0.signature.Signer
 
 import scala.concurrent.{ExecutionContext, Future}
 
