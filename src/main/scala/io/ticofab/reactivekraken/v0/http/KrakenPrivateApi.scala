@@ -20,38 +20,34 @@ class KrakenPrivateApi(apiKey: String,
   def getCurrentAccountBalance: Future[CurrentAccountBalance] = {
     val path = "/0/private/Balance"
     val nonce = nonceGenerator.apply
-    val getResponse = (request: HttpRequest) => handleRequest[Map[String, String]](request)
-      .map(extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](_, CurrentAccountBalance, _.result.get))
     val signedRequest = getSignedRequest(path, apiKey, apiSecret, nonce)
-    getResponse(signedRequest)
+    handleRequest[Map[String, String]](signedRequest)
+      .map(extractMessage[Map[String, String], CurrentAccountBalance, Map[String, String]](_, CurrentAccountBalance, _.result.get))
   }
 
   def getCurrentTradeBalance(asset: Option[String] = None): Future[CurrentTradeBalance] = {
     val path = "/0/private/TradeBalance"
     val nonce = nonceGenerator.apply
     val params = asset.fold(Map[String, String]())(asset => Map("asset" -> asset))
-    val getResponse = (request: HttpRequest) => handleRequest[TradeBalance](request)
-      .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
     val signedRequest = getSignedRequest(path, apiKey, apiSecret, nonce, params)
-    getResponse(signedRequest)
+    handleRequest[TradeBalance](signedRequest)
+      .map(extractMessage[TradeBalance, CurrentTradeBalance, TradeBalance](_, CurrentTradeBalance, _.result.get))
   }
 
   def getCurrentOpenOrders: Future[CurrentOpenOrders] = {
     val path = "/0/private/OpenOrders"
     val nonce = nonceGenerator.apply
-    val getResponse = (request: HttpRequest) => handleRequest[OpenOrder](request)
-      .map(extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](_, CurrentOpenOrders, _.result.get.open.get))
     val signedRequest = getSignedRequest(path, apiKey, apiSecret, nonce)
-    getResponse(signedRequest)
+    handleRequest[OpenOrder](signedRequest)
+      .map(extractMessage[OpenOrder, CurrentOpenOrders, Map[String, Order]](_, CurrentOpenOrders, _.result.get.open.get))
   }
 
   def getCurrentClosedOrders: Future[CurrentClosedOrders] = {
     val path = "/0/private/ClosedOrders"
     val nonce = nonceGenerator.apply
-    val getResponse = (request: HttpRequest) => handleRequest[ClosedOrder](request)
-      .map(extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](_, CurrentClosedOrders, _.result.get.closed.get))
     val signedRequest = getSignedRequest(path, apiKey, apiSecret, nonce)
-    getResponse(signedRequest)
+    handleRequest[ClosedOrder](signedRequest)
+      .map(extractMessage[ClosedOrder, CurrentClosedOrders, Map[String, Order]](_, CurrentClosedOrders, _.result.get.closed.get))
   }
 
 }
