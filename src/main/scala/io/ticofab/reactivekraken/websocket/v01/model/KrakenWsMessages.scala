@@ -12,7 +12,7 @@ object KrakenWsMessages extends DefaultJsonProtocol {
     override def event = "ping"
   }
 
-  case class SystemStatus(connectionID: Int, status: String, version: String) extends KrakenWsMessage {
+  case class SystemStatus(connectionID: BigInt, status: String, version: String) extends KrakenWsMessage {
     override def event = "systemStatus"
   }
 
@@ -20,10 +20,15 @@ object KrakenWsMessages extends DefaultJsonProtocol {
     override def event = "pong"
   }
 
+  case class HeartBeat() extends KrakenWsMessage {
+    override def event = "heartbeat"
+  }
+
   trait KrakenWsMessageJson {
     implicit val pingFormat         = jsonFormat1(Ping)
     implicit val pongFormat         = jsonFormat1(Pong)
     implicit val systemStatusFormat = jsonFormat3(SystemStatus)
+    implicit val heartbeatFormat    = jsonFormat0(HeartBeat)
 
     // format that discriminates based on an additional
     // field "type" that can either be "Cat" or "Dog"
@@ -33,6 +38,7 @@ object KrakenWsMessages extends DefaultJsonProtocol {
           case c: Ping => c.toJson
           case p: Pong => p.toJson
           case s: SystemStatus => s.toJson
+          case h: HeartBeat => h.toJson
         }).asJsObject.fields + ("event" -> JsString(obj.event)))
 
       def read(json: JsValue): KrakenWsMessage =
@@ -40,6 +46,7 @@ object KrakenWsMessages extends DefaultJsonProtocol {
           case Seq(JsString("ping")) => json.convertTo[Ping]
           case Seq(JsString("pong")) => json.convertTo[Pong]
           case Seq(JsString("systemStatus")) => json.convertTo[SystemStatus]
+          case Seq(JsString("heartbeat")) => json.convertTo[HeartBeat]
           case _ => Ping()
         }
     }

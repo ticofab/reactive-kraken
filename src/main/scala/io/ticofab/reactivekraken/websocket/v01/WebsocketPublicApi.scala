@@ -12,21 +12,22 @@ import spray.json.JsonParser
 
 import scala.concurrent.Future
 
-class WebsocketPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken")) extends KrakenWsMessageJson {
+object WebsocketPublicApi extends KrakenWsMessageJson {
 
-  implicit val as = actorSystem
-  implicit val ec = as.dispatcher
-  implicit val am = ActorMaterializer()
-  val wsUrl = "wss://ws.kraken.com"
+  val wsRequest = WebSocketRequest("wss://ws.kraken.com")
 
-  def openConnection[Mat](source: Source[KrakenWsMessage, Mat], sink: Sink[KrakenWsMessage, Future[Done]]) = {
+  def openConnection[Mat](source: Source[KrakenWsMessage, Mat],
+                          sink: Sink[KrakenWsMessage, Future[Done]],
+                          actorSystem: ActorSystem = ActorSystem("reactive-kraken")) = {
+
+    implicit val as = actorSystem
+    implicit val ec = as.dispatcher
+    implicit val am = ActorMaterializer()
 
     val messageSource: Source[Message, Mat] = source.map(krakenWsMessage => TextMessage(krakenWsMessage.toJson.compactPrint))
     val messageSink: Sink[Message, Future[Done]] = sink.contramap[Message](tm => JsonParser(tm.asTextMessage.getStrictText).convertTo[KrakenWsMessage])
 
     val flow = Flow.fromSinkAndSourceMat(messageSink, messageSource)(Keep.left)
-    val wsRequest = WebSocketRequest(wsUrl)
-
     val (upgradeResponse, closed) = Http().singleWebSocketRequest(wsRequest, flow)
 
     val connected: Future[Done] = upgradeResponse.map { upgrade =>
