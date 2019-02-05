@@ -8,11 +8,12 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import io.ticofab.reactivekraken.websocket.v01.model.KrakenWsMessages.{KrakenWsMessage, _}
-import spray.json.JsonParser
+import io.ticofab.reactivekraken.websocket.v01.model.KrakenWsMessagesJson
+import spray.json._
 
 import scala.concurrent.Future
 
-object WebsocketPublicApi extends KrakenWsMessageJson {
+object WebsocketPublicApi extends KrakenWsMessagesJson {
 
   val wsRequest = WebSocketRequest("wss://ws.kraken.com")
 
