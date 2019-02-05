@@ -1,19 +1,22 @@
 package io.ticofab.reactivekraken.v0.api
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
+import akka.stream.ActorMaterializer
 import io.ticofab.reactivekraken.v0.signature.Signer
+import spray.json._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait RequestHelper extends HttpRequestor with JsonSupport {
-
-  import spray.json._
+trait RequestHelper extends JsonSupport {
 
   protected implicit val as: ActorSystem
   protected implicit val ec: ExecutionContext
+  protected implicit val am: ActorMaterializer
 
   /**
     *
@@ -52,7 +55,11 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @return A future of the typed Response
     */
   def handleRequest[RESPONSE_CONTENT_TYPE: JsonFormat](request: HttpRequest): Future[Response[RESPONSE_CONTENT_TYPE]] =
-    fireRequest(request)
+    Http()
+      .singleRequest(request)
+      .flatMap(_.entity.toStrict(2.second))
+      .map(_.data)
+      .map(_.utf8String)
       .map(_.parseJson.convertTo[Response[RESPONSE_CONTENT_TYPE]])
       .recover { case t: Throwable => Response[RESPONSE_CONTENT_TYPE](List(t.getMessage), None) }
 
