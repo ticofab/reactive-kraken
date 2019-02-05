@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.signature
+package io.ticofab.reactivekraken.v0.signature
 
 import java.security.MessageDigest
 import javax.crypto.Mac
@@ -7,7 +7,7 @@ import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 
 /**
-  * Copyright 2017 Fabio Tiriticco, Fabway
+  * Copyright 2017-2019 Fabio Tiriticco, Fabway
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.

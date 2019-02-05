@@ -1,20 +1,22 @@
-package io.ticofab.reactivekraken.api
+package io.ticofab.reactivekraken.v0.api
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
-import io.ticofab.reactivekraken.MessageResponse
-import io.ticofab.reactivekraken.signature.Signer
+import akka.stream.ActorMaterializer
+import io.ticofab.reactivekraken.v0.signature.Signer
+import spray.json._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait RequestHelper extends HttpRequestor with JsonSupport {
+trait RequestHelper extends JsonSupport {
 
-  import spray.json._
-
-  protected implicit val actorSystem: ActorSystem
-  protected implicit val executionContext: ExecutionContext
+  protected implicit val as: ActorSystem
+  protected implicit val ec: ExecutionContext
+  protected implicit val am: ActorMaterializer
 
   /**
     *
@@ -22,13 +24,7 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @param params Optional request parameters
     * @return The correct Uri for this request
     */
-  def getUri(path: String, params: Option[Map[String, String]] = None): Uri = {
-    val basePath = "https://api.kraken.com"
-    params match {
-      case Some(value) => Uri(basePath + path).withQuery(Query(value))
-      case None => Uri(basePath + path)
-    }
-  }
+  def getUri(path: String, params: Map[String, String] = Map()): Uri = Uri("https://api.kraken.com" + path).withQuery(Query(params))
 
   /**
     * Creates the signed HTTP request to fire
@@ -39,11 +35,11 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @param apiSecret The user's API secret
     * @return The appropriate HTTP request to fire.
     */
-  private def getSignedRequest(path: String,
-                               apiKey: String,
-                               apiSecret: String,
-                               nonce: Long,
-                               params: Option[Map[String, String]] = None) = {
+  def getSignedRequest(path: String,
+                       apiKey: String,
+                       apiSecret: String,
+                       nonce: Long,
+                       params: Map[String, String] = Map()) = {
     val postData = "nonce=" + nonce.toString
     val signature = Signer.getSignature(path, nonce, postData, apiSecret)
     val headers = List(RawHeader("API-Key", apiKey), RawHeader("API-Sign", signature))
@@ -59,7 +55,11 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     * @return A future of the typed Response
     */
   def handleRequest[RESPONSE_CONTENT_TYPE: JsonFormat](request: HttpRequest): Future[Response[RESPONSE_CONTENT_TYPE]] =
-    fireRequest(request)
+    Http()
+      .singleRequest(request)
+      .flatMap(_.entity.toStrict(2.second))
+      .map(_.data)
+      .map(_.utf8String)
       .map(_.parseJson.convertTo[Response[RESPONSE_CONTENT_TYPE]])
       .recover { case t: Throwable => Response[RESPONSE_CONTENT_TYPE](List(t.getMessage), None) }
 
@@ -82,14 +82,5 @@ trait RequestHelper extends HttpRequestor with JsonSupport {
     else if (resp.result.isDefined) messageFactory(Right(contentFactory(resp)))
     else messageFactory(Left(List("Something went wrong: response has no content.")))
   }
-
-
-  def getAuthenticatedAPIResponseMessage(credentials: (String, String),
-                                         path: String,
-                                         nonce: Long,
-                                         getResponse: HttpRequest => Future[MessageResponse],
-                                         params: Option[Map[String, String]] = None): Future[MessageResponse] =
-    getResponse(getSignedRequest(path, credentials._1, credentials._2, nonce, params))
-
 
 }

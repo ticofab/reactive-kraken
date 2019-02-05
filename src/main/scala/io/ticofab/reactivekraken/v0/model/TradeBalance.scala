@@ -1,7 +1,7 @@
-package io.ticofab.reactivekraken.model
+package io.ticofab.reactivekraken.v0.model
 
 /**
-  * Copyright 2017 Fabio Tiriticco, Fabway
+  * Copyright 2017-2019 Fabio Tiriticco, Fabway
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@ package io.ticofab.reactivekraken.model
   * limitations under the License.
   */
 
-final case class TradeBalance(equivalentBalance: String,
-                              tradeBalance: String,
-                              marginAmount: String,
-                              unrealizedNetProfit: String,
-                              costBasis: String,
-                              floatingValuation: String,
-                              equity: String,
-                              freeMargin: String,
-                              marginLevel: Option[String])
+case class TradeBalance(equivalentBalance: String,
+                        tradeBalance: String,
+                        marginAmount: String,
+                        unrealizedNetProfit: String,
+                        costBasis: String,
+                        floatingValuation: String,
+                        equity: String,
+                        freeMargin: String,
+                        marginLevel: Option[String])
 
 /*
 eb = equivalent balance (combined balance of all currencies)
