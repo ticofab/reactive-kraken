@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.v0.api
+package io.ticofab.reactivekraken.http.v0.api
 
 /**
   * Copyright 2017-2019 Fabio Tiriticco, Fabway
@@ -16,7 +16,7 @@ package io.ticofab.reactivekraken.v0.api
   * limitations under the License.
   */
 
-import io.ticofab.reactivekraken.v0.model._
+import io.ticofab.reactivekraken.http.v0.model._
 import spray.json._
 
 trait JsonSupport extends DefaultJsonProtocol {

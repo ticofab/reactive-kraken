@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.v0.api
+package io.ticofab.reactivekraken.http.v0.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, Uri}
 import akka.stream.ActorMaterializer
-import io.ticofab.reactivekraken.v0.signature.Signer
+import io.ticofab.reactivekraken.signature.Signer
 import spray.json._
 
 import scala.concurrent.duration._

@@ -1,6 +1,6 @@
-package io.ticofab.reactivekraken.v0.api
+package io.ticofab.reactivekraken.http.v0.api
 
-import io.ticofab.reactivekraken.v0.model._
+import io.ticofab.reactivekraken.http.v0.model._
 import org.scalatest.WordSpec
 
 /**

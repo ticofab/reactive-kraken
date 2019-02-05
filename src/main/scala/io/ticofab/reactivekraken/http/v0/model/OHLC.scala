@@ -1,4 +1,4 @@
-package io.ticofab.reactivekraken.v0.model
+package io.ticofab.reactivekraken.http.v0.model
 
 
 case class OHLCRow(time: Long, open: String, high: String, low: String, close: String, vwap: String, volume: String, count: Int)
