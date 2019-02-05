@@ -1,0 +1,45 @@
+package io.ticofab.reactivekraken.websocket.v01
+
+import akka.Done
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import io.ticofab.reactivekraken.websocket.v01.model.KrakenWsMessages.{KrakenWsMessage, _}
+import spray.json.JsonParser
+
+import scala.concurrent.Future
+
+class WebsocketPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken")) extends KrakenWsMessageJson {
+
+  implicit val as = actorSystem
+  implicit val ec = as.dispatcher
+  implicit val am = ActorMaterializer()
+  val wsUrl = "wss://ws.kraken.com"
+
+  def openConnection[Mat](source: Source[KrakenWsMessage, Mat], sink: Sink[KrakenWsMessage, Future[Done]]) = {
+
+    val messageSource: Source[Message, Mat] = source.map(krakenWsMessage => TextMessage(krakenWsMessage.toJson.compactPrint))
+    val messageSink: Sink[Message, Future[Done]] = sink.contramap[Message](tm => JsonParser(tm.asTextMessage.getStrictText).convertTo[KrakenWsMessage])
+
+    val flow = Flow.fromSinkAndSourceMat(messageSink, messageSource)(Keep.left)
+    val wsRequest = WebSocketRequest(wsUrl)
+
+    val (upgradeResponse, closed) = Http().singleWebSocketRequest(wsRequest, flow)
+
+    val connected: Future[Done] = upgradeResponse.map { upgrade =>
+      // just like a regular http request we can access response status which is available via upgrade.response.status
+      // status code 101 (Switching Protocols) indicates that server support WebSockets
+      if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
+        Done
+      } else {
+        throw new RuntimeException(s"Connection failed: ${upgrade.response.status}")
+      }
+    }
+
+    (connected, closed)
+
+  }
+}
