@@ -16,9 +16,9 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
     override def read(json: JsValue) = json match {
       case JsString(value) => value.split("/").toList match {
         case first :: second :: Nil => CurrencyPair(first, second)
-        case _ => throw DeserializationException(s"failure to deserialize $value")
+        case _ => deserializationError(s"failure to deserialize $value")
       }
-      case _ => throw DeserializationException(s"failure to deserialize ${json.compactPrint}")
+      case _ => deserializationError(s"failure to deserialize ${json.compactPrint}")
     }
   }
 
@@ -141,6 +141,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         case h: HeartBeat => h.toJson
         case s: Subscribe => s.toJson
         case s: SubscriptionStatus => s.toJson
+        case _ => serializationError(s"failure to serialize $obj")
       }).asJsObject.fields + ("event" -> JsString(obj.event)))
 
     def read(json: JsValue): KrakenWsMessage =
@@ -151,9 +152,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         case Seq(JsString("heartbeat")) => json.convertTo[HeartBeat]
         case Seq(JsString("subscribe")) => json.convertTo[Subscribe]
         case Seq(JsString("subscriptionStatus")) => json.convertTo[SubscriptionStatus]
-        case _ =>
-          println(json)
-          Ping()
+        case _ => deserializationError(s"failure to deserialize $json")
       }
   }
 }
