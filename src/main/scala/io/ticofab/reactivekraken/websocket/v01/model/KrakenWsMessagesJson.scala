@@ -1,9 +1,12 @@
 package io.ticofab.reactivekraken.websocket.v01.model
 
-import io.ticofab.reactivekraken.websocket.v01.model.KrakenWsMessages._
-import io.ticofab.reactivekraken.websocket.v01.model.Subscription.{Spread, _}
+import io.ticofab.reactivekraken.websocket.v01.model.Subscription._
+import io.ticofab.reactivekraken.websocket.v01.model.SubscriptionStatus._
 import spray.json._
 
+/**
+  * This trait can be mixed in for JSON operations on websocket messages.
+  */
 trait KrakenWsMessagesJson extends DefaultJsonProtocol {
   implicit val pingFormat         = jsonFormat1(Ping)
   implicit val pongFormat         = jsonFormat1(Pong)
@@ -128,7 +131,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
     }
   }
 
-  implicit val subscriptionStatusFormat = jsonFormat4(SubscriptionStatus)
+  implicit val subscriptionStatusFormat = jsonFormat4(SubscriptionStatus.apply)
 
   // format that discriminates based on an additional
   // field "type" that can either be "Cat" or "Dog"
@@ -144,7 +147,8 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         case _ => serializationError(s"failure to serialize $obj")
       }).asJsObject.fields + ("event" -> JsString(obj.event)))
 
-    def read(json: JsValue): KrakenWsMessage =
+    def read(json: JsValue): KrakenWsMessage = {
+      println(json)
       json.asJsObject.getFields("event") match {
         case Seq(JsString("ping")) => json.convertTo[Ping]
         case Seq(JsString("pong")) => json.convertTo[Pong]
@@ -152,7 +156,10 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         case Seq(JsString("heartbeat")) => json.convertTo[HeartBeat]
         case Seq(JsString("subscribe")) => json.convertTo[Subscribe]
         case Seq(JsString("subscriptionStatus")) => json.convertTo[SubscriptionStatus]
-        case _ => deserializationError(s"failure to deserialize $json")
+        case _ =>
+          println(json)
+          deserializationError(s"failure to deserialize $json")
       }
+    }
   }
 }

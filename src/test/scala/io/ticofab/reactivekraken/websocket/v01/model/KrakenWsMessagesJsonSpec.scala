@@ -1,6 +1,5 @@
 package io.ticofab.reactivekraken.websocket.v01.model
 
-import io.ticofab.reactivekraken.websocket.v01.model.KrakenWsMessages.{HeartBeat, SystemStatus}
 import io.ticofab.reactivekraken.websocket.v01.model.Subscription._
 import org.scalatest.WordSpec
 import spray.json._
@@ -41,7 +40,7 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
 
       val cpList = List(CurrencyPair("AAA", "BBB"), CurrencyPair("DDD", "EEE"))
       cpList.toJson match {
-        case JsArray(Vector(p1, p2)) =>
+        case JsArray(Vector(p1, _)) =>
           p1 match {
             case JsString("AAA/BBB") => succeed
             case _ => fail
