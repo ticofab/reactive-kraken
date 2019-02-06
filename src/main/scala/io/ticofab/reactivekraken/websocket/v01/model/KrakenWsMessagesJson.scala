@@ -235,6 +235,17 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
 
   }
 
+  implicit val spreadFormat: RootJsonFormat[Spread] = new RootJsonFormat[Spread] {
+    override def write(obj: Spread) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsNumber(cid), JsArray(Vector(JsString(bid), JsString(ask), JsString(timestamp))))) =>
+        Spread(cid.toInt, bid.toDouble, ask.toDouble, timestamp.toDouble.toLong)
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+
+  }
+
   // format that discriminates based on an additional
   // field "type" that can either be "Cat" or "Dog"
   implicit val krakenWsMessageFormat = new RootJsonFormat[KrakenWsMessage] {
@@ -253,11 +264,10 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
     }
 
     def read(json: JsValue): KrakenWsMessage = {
-      println("received " + json)
       json match {
-        case JsArray(Vector(JsNumber(cid), value)) => value match {
+        case JsArray(Vector(JsNumber(_), value)) => value match {
           case JsArray(Vector(_, _, _, _, _, _, _, _, _)) => json.convertTo[OHLC]
-          case JsArray(Vector(a, b, c)) => println("got spread"); Ping()
+          case JsArray(Vector(_, _, _)) => json.convertTo[Spread]
           case JsArray(_) => json.convertTo[Trades]
           case JsObject(map) => map.toList match {
             case _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: Nil => json.convertTo[Ticker]
@@ -268,7 +278,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
           }
           case _ => deserializationError(s"failure to deserialize $json")
         }
-        case JsArray(Vector(JsNumber(cid), JsObject(a), JsObject(b))) => println("got book update asks and bids"); Ping()
+        case JsArray(Vector(JsNumber(_), JsObject(a), JsObject(b))) => println("got book update asks and bids"); Ping()
         case _ =>
           json.asJsObject.getFields("event") match {
             case Seq(JsString("ping")) => json.convertTo[Ping]
