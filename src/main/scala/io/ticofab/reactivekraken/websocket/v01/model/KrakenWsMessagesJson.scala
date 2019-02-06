@@ -2,6 +2,7 @@ package io.ticofab.reactivekraken.websocket.v01.model
 
 import io.ticofab.reactivekraken.websocket.v01.model.Subscription._
 import io.ticofab.reactivekraken.websocket.v01.model.SubscriptionStatus._
+import io.ticofab.reactivekraken.websocket.v01.model.Trade.{apply => _, unapply => _, _}
 import spray.json._
 
 /**
@@ -155,9 +156,9 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
   }
 
   implicit val tickerFormat: RootJsonFormat[Ticker] = new RootJsonFormat[Ticker] {
-    val defaultString = JsString("-1.0")
+    val defaultString         = JsString("-1.0")
     val defaultPriceAndVolume = JsArray(Vector(defaultString, defaultString, defaultString))
-    val defaultValue = JsArray(Vector(defaultString, defaultString))
+    val defaultValue          = JsArray(Vector(defaultString, defaultString))
 
     override def write(obj: Ticker) = serializationError("messages are not meant to be serialized")
 
@@ -173,6 +174,50 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
           map.getOrElse("p", defaultValue).convertTo[Value],
           map.getOrElse("t", defaultValue).convertTo[Value],
           map.getOrElse("v", defaultValue).convertTo[Value])
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+  }
+
+  implicit val triggeringOrderSideFormat: RootJsonFormat[TriggeringOrderSide] = new RootJsonFormat[TriggeringOrderSide] {
+    override def write(obj: TriggeringOrderSide) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsString(value) => value match {
+        case "b" => Buy
+        case "s" => Sell
+        case _ => deserializationError(s"failure to deserialize $json")
+      }
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+  }
+
+  implicit val triggeringOrderTypeFormat: RootJsonFormat[TriggeringOrderType] = new RootJsonFormat[TriggeringOrderType] {
+    override def write(obj: TriggeringOrderType) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsString(value) => value match {
+        case "m" => Market
+        case "l" => Limit
+        case _ => deserializationError(s"failure to deserialize $json")
+      }
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+  }
+
+  implicit val tradeFormat: RootJsonFormat[Trade] = new RootJsonFormat[Trade] {
+    override def write(obj: Trade) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsString(price), JsString(volume), JsString(time), tos, tot, JsString(misc))) =>
+        Trade(price.toDouble, volume.toDouble, time.toDouble.toLong, tos.convertTo[TriggeringOrderSide], tot.convertTo[TriggeringOrderType], misc)
+    }
+  }
+
+  implicit val tradesFormat: RootJsonFormat[Trades] = new RootJsonFormat[Trades] {
+    override def write(obj: Trades) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsNumber(cid), trades)) => Trades(cid.toInt, trades.convertTo[List[Trade]])
       case _ => deserializationError(s"failure to deserialize $json")
     }
 
@@ -201,7 +246,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         case JsArray(Vector(JsNumber(cid), value)) => value match {
           case JsArray(Vector(a, b, c, d, e, f, g, h, i)) => println("got OHLC"); Ping()
           case JsArray(Vector(a, b, c)) => println("got spread"); Ping()
-          case JsArray(vector) => println("got trades"); Ping()
+          case JsArray(_) => json.convertTo[Trades]
           case JsObject(map) => map.toList match {
             case _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: Nil => json.convertTo[Ticker]
             case ("as", _) :: ("bs", _) :: Nil => println("got book snapshot"); Ping()

@@ -113,5 +113,15 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       val ticker = jsonStr.parseJson.convertTo[Ticker]
       assert(ticker.ask.wholeLotVolume.isDefined)
     }
+
+    "Convert a Trades object correctly" in {
+      val jsonStr =
+        """
+          |[105,[["90.93000","0.37800000","1549470888.352063","s","m",""]]]
+        """.stripMargin
+      val trades = jsonStr.parseJson.convertTo[Trades]
+      assert(trades.channelId == 105)
+      assert(trades.trades.size == 1)
+    }
   }
 }
