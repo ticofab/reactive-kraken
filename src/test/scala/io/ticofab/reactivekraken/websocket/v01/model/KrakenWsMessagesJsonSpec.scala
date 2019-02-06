@@ -56,7 +56,7 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       assert(fields("interval") == JsNumber(10080))
       assert(fields("depth") == JsNumber(100))
 
-      val json2 = Subscription(Ticker).toJson
+      val json2 = Subscription(TopicTicker).toJson
       val fields2 = json2.asJsObject.fields
       assert(!fields2.contains("interval"))
       assert(fields2("name") == JsString("ticker"))
@@ -79,7 +79,7 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       assert(sub.pair.size == 1)
       assert(sub.pair.head == CurrencyPair("XBT", "EUR"))
       assert(sub.reqId.isEmpty)
-      assert(sub.subscription.name == OHLC)
+      assert(sub.subscription.name == TopicOHLC)
       assert(sub.subscription.interval.contains(FiveMinutes))
       assert(sub.subscription.depth.isEmpty)
 
@@ -99,10 +99,19 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       assert(sub2.pair.size == 2)
       assert(sub2.pair.head == CurrencyPair("XBT", "USD"))
       assert(sub2.reqId.isEmpty)
-      assert(sub2.subscription.name == Ticker)
+      assert(sub2.subscription.name == TopicTicker)
       assert(sub2.subscription.interval.isEmpty)
       assert(sub2.subscription.depth.isEmpty)
 
+    }
+
+    "Convert a Ticker correctly" in {
+      val jsonStr =
+        """
+          |[106,{"a":["90.75000",2,"2.84179191"],"b":["90.72000",4,"4.00000000"],"c":["90.75000","0.25743408"],"h":["93.50000","93.50000"],"l":["88.00000","88.00000"],"o":["93.10000","92.48000"],"p":["89.83517","90.09955"],"t":[7606,9443],"v":["79663.52063690","87512.86337865"]}]
+        """.stripMargin
+      val ticker = jsonStr.parseJson.convertTo[Ticker]
+      assert(ticker.ask.wholeLotVolume.isDefined)
     }
   }
 }

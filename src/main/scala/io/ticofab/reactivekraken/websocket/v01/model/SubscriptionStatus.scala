@@ -5,7 +5,7 @@ import io.ticofab.reactivekraken.websocket.v01.model.SubscriptionStatus.Subscrip
 case class SubscriptionStatus(channelID: Int,
                               status: SubscriptionEvent,
                               pair: CurrencyPair,
-                              subscription: Subscription) extends KrakenWsMessage {
+                              subscription: Subscription) extends KrakenWsEvent {
   override def event = "subscriptionStatus"
 }
 

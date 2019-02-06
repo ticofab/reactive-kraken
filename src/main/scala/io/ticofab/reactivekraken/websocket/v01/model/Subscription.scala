@@ -10,15 +10,15 @@ object Subscription {
 
   sealed trait SubscriptionTopic
 
-  case object Ticker extends SubscriptionTopic
+  case object TopicTicker extends SubscriptionTopic
 
-  case object OHLC extends SubscriptionTopic
+  case object TopicOHLC extends SubscriptionTopic
 
-  case object Trade extends SubscriptionTopic
+  case object TopicTrade extends SubscriptionTopic
 
-  case object Book extends SubscriptionTopic
+  case object TopicBook extends SubscriptionTopic
 
-  case object Spread extends SubscriptionTopic
+  case object TopicSpread extends SubscriptionTopic
 
   case object AllTopics extends SubscriptionTopic
 
