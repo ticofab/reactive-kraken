@@ -223,6 +223,18 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
 
   }
 
+  implicit val ohlcFormat: RootJsonFormat[OHLC] = new RootJsonFormat[OHLC] {
+    override def write(obj: OHLC) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsNumber(cid), JsArray(Vector(JsString(time), JsString(endtime), JsString(open),
+      JsString(high), JsString(low), JsString(close), JsString(vwap), JsString(volume), JsNumber(count))))) =>
+        OHLC(cid.toInt, time.toDouble.toLong, endtime.toDouble.toLong, open.toDouble, high.toDouble, low.toDouble, close.toDouble, vwap.toDouble, volume.toDouble, count.toInt)
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+
+  }
+
   // format that discriminates based on an additional
   // field "type" that can either be "Cat" or "Dog"
   implicit val krakenWsMessageFormat = new RootJsonFormat[KrakenWsMessage] {
@@ -244,7 +256,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
       println("received " + json)
       json match {
         case JsArray(Vector(JsNumber(cid), value)) => value match {
-          case JsArray(Vector(a, b, c, d, e, f, g, h, i)) => println("got OHLC"); Ping()
+          case JsArray(Vector(_, _, _, _, _, _, _, _, _)) => json.convertTo[OHLC]
           case JsArray(Vector(a, b, c)) => println("got spread"); Ping()
           case JsArray(_) => json.convertTo[Trades]
           case JsObject(map) => map.toList match {

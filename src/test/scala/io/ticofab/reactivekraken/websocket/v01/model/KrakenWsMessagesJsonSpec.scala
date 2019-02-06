@@ -123,5 +123,15 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       assert(trades.channelId == 105)
       assert(trades.trades.size == 1)
     }
+
+    "Convert OHLC objects correctly" in {
+      val jsonStr =
+        """
+          |[108,["1549472678.449328","1549472700.000000","90.51000","90.52000","90.51000","90.52000","90.51901","4.00003466",2]]
+        """.stripMargin
+      val ohlc = jsonStr.parseJson.convertTo[OHLC]
+      assert(ohlc.channelId == 108)
+      assert(ohlc.endtime == 1549472700L)
+    }
   }
 }
