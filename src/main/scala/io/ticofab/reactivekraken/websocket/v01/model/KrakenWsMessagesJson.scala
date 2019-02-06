@@ -1,5 +1,6 @@
 package io.ticofab.reactivekraken.websocket.v01.model
 
+import io.ticofab.reactivekraken.websocket.v01.model.Book.{BookEntry, Snapshot, Update}
 import io.ticofab.reactivekraken.websocket.v01.model.Subscription._
 import io.ticofab.reactivekraken.websocket.v01.model.SubscriptionStatus._
 import io.ticofab.reactivekraken.websocket.v01.model.Trade.{apply => _, unapply => _, _}
@@ -119,7 +120,15 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
   implicit val subscribeFormat = jsonFormat3(Subscribe)
 
   implicit val subscriptionEventFormat: RootJsonFormat[SubscriptionEvent] = new RootJsonFormat[SubscriptionEvent] {
-    override def write(obj: SubscriptionEvent) = ???
+    override def write(obj: SubscriptionEvent) = {
+      val string = obj match {
+        case Subscribed => "subscribed"
+        case Unsubscribed => "unsubscribed"
+        case Error => "error"
+        case _ => serializationError(s"failure to serialize $obj")
+      }
+      JsString(string)
+    }
 
     override def read(json: JsValue) = json match {
       case JsString(value) => value match {
@@ -243,11 +252,36 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
         Spread(cid.toInt, bid.toDouble, ask.toDouble, timestamp.toDouble.toLong)
       case _ => deserializationError(s"failure to deserialize $json")
     }
-
   }
 
-  // format that discriminates based on an additional
-  // field "type" that can either be "Cat" or "Dog"
+  implicit val bookEntryFormat: RootJsonFormat[BookEntry] = new RootJsonFormat[BookEntry] {
+    override def write(obj: BookEntry) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsString(price), JsString(volume), JsString(timestamp))) =>
+        BookEntry(price.toDouble, volume.toDouble, timestamp.toDouble.toLong)
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+  }
+
+  implicit val bookFormat: RootJsonFormat[Book] = new RootJsonFormat[Book] {
+    override def write(obj: Book) = serializationError("messages are not meant to be serialized")
+
+    override def read(json: JsValue) = json match {
+      case JsArray(Vector(JsNumber(cid), JsObject(map))) => map.toList match {
+        case ("as", asksArray) :: ("bs", bidsArray) :: Nil => Book(cid.toInt, Snapshot, asksArray.convertTo[List[BookEntry]], bidsArray.convertTo[List[BookEntry]])
+        case ("a", asksArray) :: Nil => Book(cid.toInt, Update, asksArray.convertTo[List[BookEntry]], Nil)
+        case ("b", bidsArray) :: Nil => Book(cid.toInt, Update, Nil, bidsArray.convertTo[List[BookEntry]])
+        case _ => deserializationError(s"failure to deserialize $json")
+      }
+      case JsArray(Vector(JsNumber(cid), JsObject(a), JsObject(b))) =>
+        Book(cid.toInt, Update, a.getOrElse("a", JsArray.empty).convertTo[List[BookEntry]], b.getOrElse("b", JsArray.empty).convertTo[List[BookEntry]])
+      case _ => deserializationError(s"failure to deserialize $json")
+    }
+  }
+
+  // this generic formatter has the task to understand which message we're dealing with.
+  // then it delegates the actual serialization to the specific formatter
   implicit val krakenWsMessageFormat = new RootJsonFormat[KrakenWsMessage] {
     def write(obj: KrakenWsMessage): JsValue = obj match {
       case ev: KrakenWsEvent =>
@@ -271,14 +305,14 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
           case JsArray(_) => json.convertTo[Trades]
           case JsObject(map) => map.toList match {
             case _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: Nil => json.convertTo[Ticker]
-            case ("as", _) :: ("bs", _) :: Nil => println("got book snapshot"); Ping()
-            case ("a", _) :: Nil => println("got book update asks"); Ping()
-            case ("b", _) :: Nil => println("got book update bids"); Ping()
+            case ("as", _) :: ("bs", _) :: Nil => json.convertTo[Book]
+            case ("a", _) :: Nil => json.convertTo[Book]
+            case ("b", _) :: Nil => json.convertTo[Book]
             case _ => deserializationError(s"failure to deserialize $json")
           }
           case _ => deserializationError(s"failure to deserialize $json")
         }
-        case JsArray(Vector(JsNumber(_), JsObject(a), JsObject(b))) => println("got book update asks and bids"); Ping()
+        case JsArray(Vector(JsNumber(_), JsObject(_), JsObject(_))) => json.convertTo[Book]
         case _ =>
           json.asJsObject.getFields("event") match {
             case Seq(JsString("ping")) => json.convertTo[Ping]

@@ -1,5 +1,6 @@
 package io.ticofab.reactivekraken.websocket.v01.model
 
+import io.ticofab.reactivekraken.websocket.v01.model.Book.{Snapshot, Update}
 import io.ticofab.reactivekraken.websocket.v01.model.Subscription._
 import org.scalatest.WordSpec
 import spray.json._
@@ -142,6 +143,112 @@ class KrakenWsMessagesJsonSpec extends WordSpec with KrakenWsMessagesJson {
       val spread = jsonStr.parseJson.convertTo[Spread]
       assert(spread.channelId == 107)
       assert(spread.timestamp == 1549473455L)
+    }
+
+    "Convert Book correctly" in {
+      val jsonBookSnapshotStr =
+        """
+          |[
+          |  0,
+          |  {
+          |    "as": [
+          |      [
+          |          "5541.30000",
+          |          "2.50700000",
+          |          "1534614248.123678"
+          |      ],
+          |      [
+          |          "5541.80000",
+          |          "0.33000000",
+          |          "1534614098.345543"
+          |      ],
+          |      [
+          |          "5542.70000",
+          |          "0.64700000",
+          |          "1534614244.654432"
+          |      ]
+          |    ],
+          |    "bs": [
+          |      [
+          |          "5541.20000",
+          |          "1.52900000",
+          |          "1534614248.765567"
+          |      ],
+          |      [
+          |          "5539.90000",
+          |          "0.30000000",
+          |          "1534614241.769870"
+          |      ],
+          |      [
+          |          "5539.50000",
+          |          "5.00000000",
+          |          "1534613831.243486"
+          |      ]
+          |    ]
+          |  }
+          | ]
+        """.stripMargin
+      val book = jsonBookSnapshotStr.parseJson.convertTo[Book]
+      assert(book.channelId == 0)
+      assert(book.bookMessageType == Snapshot)
+      assert(book.bids.size == 3)
+      assert(book.bids.last.timestamp == 1534613831L)
+
+      val jsonBookUpdateStr1 =
+        """
+          |[
+          |  1234,
+          |  {"a": [
+          |    [
+          |      "5541.30000",
+          |      "2.50700000",
+          |      "1534614248.456738"
+          |    ],
+          |    [
+          |      "5542.50000",
+          |      "0.40100000",
+          |      "1534614248.456738"
+          |    ]
+          |  ]}
+          | ]
+        """.stripMargin
+      val bookU1 = jsonBookUpdateStr1.parseJson.convertTo[Book]
+      assert(bookU1.channelId == 1234)
+      assert(bookU1.bookMessageType == Update)
+      assert(bookU1.bids.isEmpty)
+      assert(bookU1.asks.size == 2)
+
+      val jsonBookUpdateStr2 =
+        """
+          |[
+          |  1234,
+          |  {"a": [
+          |    [
+          |      "5541.30000",
+          |      "2.50700000",
+          |      "1534614248.456738"
+          |    ],
+          |    [
+          |      "5542.50000",
+          |      "0.40100000",
+          |      "1534614248.456738"
+          |    ]
+          |  ]
+          |  },
+          |  {"b": [
+          |    [
+          |      "5541.30000",
+          |      "0.00000000",
+          |      "1534614335.345903"
+          |    ]
+          |  ]
+          |  }
+          | ]
+        """.stripMargin
+      val bookU2 = jsonBookUpdateStr2.parseJson.convertTo[Book]
+      assert(bookU2.channelId == 1234)
+      assert(bookU2.asks.size == 2)
+      assert(bookU2.bids.size == 1)
     }
   }
 }
