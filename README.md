@@ -19,8 +19,8 @@ See the [Signer](https://github.com/ticofab/reactive-kraken/blob/master/src/main
 
 #### REST API usage
 
-There are two objects here: the `[HttpPublicApi](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/http/v0/HttpPublicApi.scala)`
-and the `[HttpPrivateApi](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/http/v0/HttpPrivateApi.scala)`
+There are two objects here: the [`HttpPublicApi`](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/http/v0/HttpPublicApi.scala)
+and the [`HttpPrivateApi`](https://github.com/ticofab/reactive-kraken/blob/master/src/main/scala/io/ticofab/reactivekraken/http/v0/HttpPrivateApi.scala)
 
 Each methods does the HTTP request for you and returns a `Future[T]`, where `T` is the type of message returned by each endpoint.
 All such types are in the [model](https://github.com/ticofab/reactive-kraken/tree/master/src/main/scala/io/ticofab/reactivekraken/http/v0/model) package. 
