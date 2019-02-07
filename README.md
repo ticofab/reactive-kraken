@@ -1,12 +1,12 @@
 # Reactive Kraken
 
-Scala library based on [Akka](http://akka.io) to help connect reactively to the [Kraken API](https://www.kraken.com/help/api).
+Scala client based on [Akka](http://akka.io) to help connect reactively to the [Kraken API](https://www.kraken.com/help/api).
 
-The Kraken API and its available data is described here: https://www.kraken.com/help/api . Main features:
+Main features:
 
 1. Signing functionality
-2. Actor based usage
-3. Stream based usage
+2. Future-based REST API (public and private endpoints)
+3. Akka Stream-based Websocket API
 
 #### Signing functionality only
 
