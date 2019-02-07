@@ -6,11 +6,23 @@ import akka.stream.ActorMaterializer
 import io.ticofab.reactivekraken.http.v0.api.RequestHelper
 import io.ticofab.reactivekraken.http.v0.model._
 
+/**
+  * Gateway for the private Kraken APIs.
+  *
+  * @param actorSystem The Actor System. Note that if you don't provide any, you will need to manually shutdown the one that is created by this class
+  */
 class KrakenPublicApi(actorSystem: ActorSystem = ActorSystem("reactive-kraken")) extends RequestHelper {
 
   implicit val as = actorSystem
   implicit val ec = as.dispatcher
   implicit val am = ActorMaterializer()
+
+  /**
+    * Shuts the actor system down.
+    *
+    * @return A Future[Terminated]
+    */
+  def shutdown = actorSystem.terminate()
 
   def getServerTime = {
     val path = "/0/public/Time"

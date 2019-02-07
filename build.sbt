@@ -17,7 +17,7 @@
 
 name := """reactive-kraken"""
 
-version := "0.4.0"
+version := "1.0.0"
 
 scalaVersion := "2.12.8"
 
@@ -46,9 +46,7 @@ libraryDependencies ++= {
     "commons-codec" % "commons-codec" % "1.11",
 
     // ---- test
-    "org.scalatest" %% "scalatest" % "3.0.1" % Test,
-    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test
+    "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
   )
 
