@@ -1,24 +1,10 @@
 # Reactive Kraken
 
-Scala library based on [Akka](http://akka.io) to help connect to the [Kraken API](https://www.kraken.com/help/api) in a reactive way.
-Work in progress and contributions are very welcome. Note that version `1.0.0` is a breaking change. Actor-based clients are gone in
-favor or Future-based versions - you can then use them within your own actors if you want, which I think it's a more flexible choice
-for a client library.
+Scala library based on [Akka](http://akka.io) to help connect reactively to the [Kraken API](https://www.kraken.com/help/api).
 
-## Import via SBT
+The Kraken API and its available data is described here: https://www.kraken.com/help/api . Main features:
 
-Available for Scala 2.11 and 2.12. In your build.sbt file,
-
-```sbt
-resolvers += Resolver.jcenterRepo // you might not need this line
-libraryDependencies += "io.ticofab" %% "reactive-kraken" % "1.0.0"
-```
-
-## Features
-
-The Kraken API and its available data is described here: https://www.kraken.com/help/api . Check the test package of this project for some examples. You can use this library in three ways.
-
-1. Signing functionality only
+1. Signing functionality
 2. Actor based usage
 3. Stream based usage
 
@@ -157,12 +143,25 @@ object TestApp extends App {
 }
 ```
 
+## Import via SBT
+
+Available for Scala 2.11 and 2.12. In your build.sbt file,
+
+```sbt
+resolvers += Resolver.jcenterRepo // you might not need this line
+libraryDependencies += "io.ticofab" %% "reactive-kraken" % "1.0.0"
+```
+
 ## Dependencies
 
 * [Akka](http://akka.io)
 * [Spray Json](https://github.com/spray/spray-json)
 * [Apache Commons Codec](https://commons.apache.org/proper/commons-codec/)
 * [ScalaTest](http://www.scalatest.org)
+
+## Contributing
+
+Contributions are most welcome. Please use the Issues section of this project and fire PRs away!
 
 ## License
 
