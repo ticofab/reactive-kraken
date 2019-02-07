@@ -143,6 +143,8 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
 
   implicit val subscriptionStatusFormat = jsonFormat4(SubscriptionStatus.apply)
 
+  implicit val unsubscribeFormat = jsonFormat4(Unsubscribe)
+
   implicit val priceAndVolumeFormat: RootJsonFormat[PriceAndVolume] = new RootJsonFormat[PriceAndVolume] {
     override def write(obj: PriceAndVolume) = serializationError("messages are not meant to be serialized")
 
@@ -286,12 +288,13 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
     def write(obj: KrakenWsMessage): JsValue = obj match {
       case ev: KrakenWsEvent =>
         JsObject((ev match {
-          case c: Ping => c.toJson
+          case p: Ping => p.toJson
           case p: Pong => p.toJson
           case s: SystemStatus => s.toJson
           case h: HeartBeat => h.toJson
           case s: Subscribe => s.toJson
           case s: SubscriptionStatus => s.toJson
+          case u: Unsubscribe => u.toJson
           case _ => serializationError(s"failure to serialize $ev")
         }).asJsObject.fields + ("event" -> JsString(ev.event)))
       case _: KrakenWsMessage => serializationError("messages aren't meant to be serialized")
@@ -320,6 +323,7 @@ trait KrakenWsMessagesJson extends DefaultJsonProtocol {
             case Seq(JsString("systemStatus")) => json.convertTo[SystemStatus]
             case Seq(JsString("heartbeat")) => json.convertTo[HeartBeat]
             case Seq(JsString("subscribe")) => json.convertTo[Subscribe]
+            case Seq(JsString("unsubscribe")) => json.convertTo[Unsubscribe]
             case Seq(JsString("subscriptionStatus")) => json.convertTo[SubscriptionStatus]
             case _ => deserializationError(s"failure to deserialize $json")
           }

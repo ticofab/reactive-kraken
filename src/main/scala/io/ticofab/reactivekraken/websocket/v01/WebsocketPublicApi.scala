@@ -25,12 +25,12 @@ object WebsocketPublicApi extends KrakenWsMessagesJson {
     implicit val am = ActorMaterializer()
 
     val messageSource: Source[Message, Mat] = source.map(krakenWsMessage => TextMessage(krakenWsMessage.toJson.compactPrint))
-    val messageSink: Sink[Message, Future[Done]] = sink.contramap[Message](tm => JsonParser(tm.asTextMessage.getStrictText).convertTo[KrakenWsMessage])
+    val messageSink: Sink[Message, Future[Done]] = sink.contramap[Message](tm => tm.asTextMessage.getStrictText.parseJson.convertTo[KrakenWsMessage])
 
     val flow = Flow.fromSinkAndSourceMat(messageSink, messageSource)(Keep.left)
-    val (upgradeResponse, closed) = Http().singleWebSocketRequest(wsRequest, flow)
+    val (upgradeResponse, futureClosed) = Http().singleWebSocketRequest(wsRequest, flow)
 
-    val connected: Future[Done] = upgradeResponse.map { upgrade =>
+    val futureConnected: Future[Done] = upgradeResponse.map { upgrade =>
       // just like a regular http request we can access response status which is available via upgrade.response.status
       // status code 101 (Switching Protocols) indicates that server support WebSockets
       if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
@@ -40,7 +40,7 @@ object WebsocketPublicApi extends KrakenWsMessagesJson {
       }
     }
 
-    (connected, closed)
+    (futureConnected, futureClosed)
 
   }
 }
