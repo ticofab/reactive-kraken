@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 1.0.0 *(7th of February 2019)*
+**BREAKING CHANGE**
+* Removed both actor-based and stream-based clients
+* Introduced Future-based HTTP requests
+* Support for the new Websocket API 
+
 ## Version 0.4.0 *(12th of November 2017)*
 
 * Completed public API endpoints (thanks [Gergő Törcsvári](https://github.com/tg44])!)
