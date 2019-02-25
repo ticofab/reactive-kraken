@@ -1,10 +1,10 @@
 package io.ticofab.reactivekraken.signature
 
 import java.security.MessageDigest
+import java.util.Base64
+
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-
-import org.apache.commons.codec.binary.Base64
 
 /**
   * Copyright 2017-2019 Fabio Tiriticco, Fabway
@@ -38,9 +38,9 @@ object Signer {
     val md = MessageDigest.getInstance("SHA-256")
     md.update((nonce + postData).getBytes)
     val mac = Mac.getInstance("HmacSHA512")
-    mac.init(new SecretKeySpec(Base64.decodeBase64(apiSecret), "HmacSHA512"))
+    mac.init(new SecretKeySpec(Base64.getDecoder.decode(apiSecret), "HmacSHA512"))
     mac.update(path.getBytes)
-    new String(Base64.encodeBase64(mac.doFinal(md.digest())))
+    Base64.getEncoder.encodeToString(mac.doFinal(md.digest()))
   }
 
 }

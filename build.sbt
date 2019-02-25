@@ -42,9 +42,6 @@ libraryDependencies ++= {
     // json parsing stuff
     "io.spray" %% "spray-json" % "1.3.5",
 
-    // for de/encoding in Base64
-    "commons-codec" % "commons-codec" % "1.11",
-
     // ---- test
     "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
