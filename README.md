@@ -5,8 +5,8 @@ Scala client based on [Akka](http://akka.io) to help connect reactively to the [
 Main features:
 
 1. Signing functionality
-2. Future-based REST API (public and private endpoints)
-3. Akka Stream-based Websocket API
+2. REST API (public and private endpoints), based on Future
+3. Websocket API - based on Akka Stream
 
 #### Signing functionality only
 
